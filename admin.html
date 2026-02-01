@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin · Platform</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  margin:0;
+  background:#f5f5f7;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  color:#111;
+}
+
+/* NAVBAR */
+.navbar {
+  background:#fff;
+  border-bottom:1px solid #ddd;
+  padding:12px 20px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.navbar .title {
+  font-weight:700;
+  font-size:1.1rem;
+}
+.nav-btn {
+  border-radius:999px;
+  border:2px solid #000;
+  background:#fff;
+  color:#000;
+  padding:6px 14px;
+  font-size:0.85rem;
+  font-weight:600;
+  cursor:pointer;
+}
+.nav-btn.active {
+  background:#000;
+  color:#fff;
+}
+
+/* LAYOUT */
+.shell {
+  max-width:1100px;
+  margin:0 auto;
+  padding:20px 16px 40px;
+}
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:16px;
+}
+.card {
+  background:#fff;
+  border-radius:16px;
+  padding:14px 14px 16px;
+  border:1px solid #ddd;
+  box-shadow:0 8px 20px rgba(0,0,0,0.06);
+}
+.card h2 {
+  margin:0 0 6px;
+  font-size:1rem;
+}
+.field {
+  margin-bottom:8px;
+}
+.field label {
+  display:block;
+  font-size:0.75rem;
+  margin-bottom:2px;
+}
+.field input,
+.field textarea {
+  width:100%;
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  font-size:0.85rem;
+}
+.btn {
+  border-radius:999px;
+  border:2px solid #000;
+  background:#000;
+  color:#fff;
+  padding:8px 14px;
+  font-size:0.85rem;
+  font-weight:600;
+  cursor:pointer;
+}
+.status {
+  margin-top:8px;
+  font-size:0.8rem;
+  color:#0a7a2f;
+  min-height:1em;
+}
+.list {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  font-size:0.9rem;
+}
+.list-item {
+  background:#f9f9fb;
+  padding:8px 10px;
+  border-radius:10px;
+  display:flex;
+  justify-content:space-between;
+}
+.pill {
+  border:1px solid #000;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:0.75rem;
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <div class="title">Admin Dashboard</div>
+  <button class="nav-btn active" data-section="add">Add Content</button>
+  <button class="nav-btn" data-section="view">View All</button>
+  <button class="nav-btn" id="logoutBtn">Sign out</button>
+</div>
+
+<div class="shell" id="content"></div>
+
+<script type="module">
+import {
+  auth, db, onAuthStateChanged, signOut,
+  collection, addDoc, serverTimestamp, ADMIN_EMAILS
+} from "./firebase.js";
+import {
+  doc, setDoc, getDoc, onSnapshot, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+onAuthStateChanged(auth, user => {
+  if (!user || !ADMIN_EMAILS.includes(user.email)) {
+    window.location.href = "index";
+  }
+});
+
+logoutBtn.onclick = () => signOut(auth);
+
+const content = document.getElementById("content");
+const navBtns = [...document.querySelectorAll(".nav-btn[data-section]")];
+
+function setActive(section) {
+  navBtns.forEach(b => b.classList.toggle("active", b.dataset.section === section));
+}
+
+navBtns.forEach(btn => {
+  btn.onclick = () => {
+    setActive(btn.dataset.section);
+    loadSection(btn.dataset.section);
+  };
+});
+
+loadSection("add");
+
+/* -------------------------
+   SECTION: ADD CONTENT
+-------------------------- */
+function loadSection(section) {
+  if (section === "add") {
+    content.innerHTML = `
+      <div class="grid">
+
+        <div class="card">
+          <h2>Add Announcement</h2>
+          <div class="field"><label>Title</label><input id="annTitle"></div>
+          <div class="field"><label>Message</label><textarea id="annMessage" rows="3"></textarea></div>
+          <button class="btn" id="annAddBtn">Add</button>
+          <div class="status" id="annStatus"></div>
+        </div>
+
+        <div class="card">
+          <h2>Add Rehearsal</h2>
+          <div class="field"><label>Title</label><input id="schTitle"></div>
+          <div class="field"><label>Date</label><input id="schDate" placeholder="2026-02-01"></div>
+          <div class="field"><label>Time</label><input id="schTime" placeholder="18:00–21:00"></div>
+          <button class="btn" id="schAddBtn">Add</button>
+          <div class="status" id="schStatus"></div>
+        </div>
+
+        <div class="card">
+          <h2>Add Track</h2>
+          <div class="field"><label>Title</label><input id="trkTitle"></div>
+          <div class="field"><label>URL</label><input id="trkUrl"></div>
+          <button class="btn" id="trkAddBtn">Add</button>
+          <div class="status" id="trkStatus"></div>
+        </div>
+
+        <div class="card">
+          <h2>Add Video</h2>
+          <div class="field"><label>Title</label><input id="vidTitle"></div>
+          <div class="field"><label>URL</label><input id="vidUrl"></div>
+          <button class="btn" id="vidAddBtn">Add</button>
+          <div class="status" id="vidStatus"></div>
+        </div>
+
+        <div class="card">
+          <h2>Script URL</h2>
+          <div class="field"><label>URL</label><input id="scriptUrl"></div>
+          <button class="btn" id="scriptSaveBtn">Save</button>
+          <div class="status" id="scriptStatus"></div>
+        </div>
+
+      </div>
+    `;
+
+    // Add logic
+    document.getElementById("annAddBtn").onclick = async () => {
+      await addDoc(collection(db,"announcements"),{
+        title:annTitle.value,
+        message:annMessage.value,
+        createdAt:serverTimestamp()
+      });
+      annTitle.value = annMessage.value = "";
+      annStatus.textContent = "Added!";
+    };
+
+    document.getElementById("schAddBtn").onclick = async () => {
+      await addDoc(collection(db,"schedule"),{
+        title:schTitle.value,
+        date:schDate.value,
+        time:schTime.value,
+        createdAt:serverTimestamp()
+      });
+      schTitle.value = schDate.value = schTime.value = "";
+      schStatus.textContent = "Added!";
+    };
+
+    document.getElementById("trkAddBtn").onclick = async () => {
+      await addDoc(collection(db,"tracks"),{
+        title:trkTitle.value,
+        url:trkUrl.value,
+        createdAt:serverTimestamp()
+      });
+      trkTitle.value = trkUrl.value = "";
+      trkStatus.textContent = "Added!";
+    };
+
+    document.getElementById("vidAddBtn").onclick = async () => {
+      await addDoc(collection(db,"videos"),{
+        title:vidTitle.value,
+        url:vidUrl.value,
+        createdAt:serverTimestamp()
+      });
+      vidTitle.value = vidUrl.value = "";
+      vidStatus.textContent = "Added!";
+    };
+
+    document.getElementById("scriptSaveBtn").onclick = async () => {
+      await setDoc(doc(db,"settings","script"),{url:scriptUrl.value});
+      scriptStatus.textContent = "Saved!";
+    };
+
+    return;
+  }
+
+  /* -------------------------
+     SECTION: VIEW EVERYTHING
+  -------------------------- */
+  if (section === "view") {
+    content.innerHTML = `
+      <h2>All Data</h2>
+      <div class="grid">
+        <div class="card"><h2>Announcements</h2><div id="annList" class="list"></div></div>
+        <div class="card"><h2>Rehearsals</h2><div id="schList" class="list"></div></div>
+        <div class="card"><h2>Tracks</h2><div id="trkList" class="list"></div></div>
+        <div class="card"><h2>Videos</h2><div id="vidList" class="list"></div></div>
+        <div class="card"><h2>Chat</h2><div id="chatList" class="list"></div></div>
+      </div>
+    `;
+
+    onSnapshot(query(collection(db,"announcements"),orderBy("createdAt","desc")), snap=>{
+      annList.innerHTML = "";
+      snap.forEach(d=>{
+        annList.innerHTML += `<div class="list-item"><span>${d.data().title}</span></div>`;
+      });
+    });
+
+    onSnapshot(query(collection(db,"schedule"),orderBy("date","asc")), snap=>{
+      schList.innerHTML = "";
+      snap.forEach(d=>{
+        const x=d.data();
+        schList.innerHTML += `<div class="list-item"><span>${x.title}</span><span class="pill">${x.date}</span></div>`;
+      });
+    });
+
+    onSnapshot(collection(db,"tracks"), snap=>{
+      trkList.innerHTML = "";
+      snap.forEach(d=>{
+        trkList.innerHTML += `<div class="list-item"><span>${d.data().title}</span></div>`;
+      });
+    });
+
+    onSnapshot(collection(db,"videos"), snap=>{
+      vidList.innerHTML = "";
+      snap.forEach(d=>{
+        vidList.innerHTML += `<div class="list-item"><span>${d.data().title}</span></div>`;
+      });
+    });
+
+    onSnapshot(query(collection(db,"chat"),orderBy("createdAt","asc")), snap=>{
+      chatList.innerHTML = "";
+      snap.forEach(d=>{
+        const x=d.data();
+        chatList.innerHTML += `<div class="list-item"><span>${x.user}: ${x.text}</span></div>`;
+      });
+    });
+
+    return;
+  }
+}
+</script>
+</body>
+</html>

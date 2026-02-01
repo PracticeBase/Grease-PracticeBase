@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  margin:0;
+  background:#f5f5f7;
+  font-family:system-ui;
+  display:flex;
+  height:100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width:240px;
+  background:#fff;
+  border-right:1px solid #ddd;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.sidebar a {
+  padding:10px 14px;
+  border-radius:10px;
+  font-weight:600;
+  text-decoration:none;
+  color:#000;
+  border:2px solid #000;
+  background:#fff;
+}
+
+/* Main */
+.main {
+  flex:1;
+  padding:24px;
+  overflow:auto;
+}
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:16px;
+}
+.icon-card {
+  background:#fff;
+  padding:20px;
+  border-radius:16px;
+  text-align:center;
+  border:1px solid #ddd;
+  cursor:pointer;
+  font-weight:600;
+  box-shadow:0 6px 14px rgba(0,0,0,0.06);
+}
+</style>
+</head>
+
+<body>
+
+<script>
+// redirect mobile
+if (window.innerWidth < 700) {
+  window.location.href = "mobile";
+}
+</script>
+
+<div class="sidebar">
+  <a href="#" onclick="load('home')">Home</a>
+  <a href="#" onclick="load('announcements')">Announcements</a>
+  <a href="#" onclick="load('schedule')">Rehearsals</a>
+  <a href="#" onclick="load('tracks')">Tracks</a>
+  <a href="#" onclick="load('videos')">Videos</a>
+  <a href="#" onclick="load('script')">Script</a>
+  <a href="#" onclick="load('chat')">Chat</a>
+  <a href="#" id="logoutBtn">Sign out</a>
+</div>
+
+<div class="main" id="main">
+  <h2>Dashboard</h2>
+  <div class="grid">
+    <div class="icon-card" onclick="load('announcements')">Announcements</div>
+    <div class="icon-card" onclick="load('schedule')">Rehearsals</div>
+    <div class="icon-card" onclick="load('tracks')">Tracks</div>
+    <div class="icon-card" onclick="load('videos')">Videos</div>
+    <div class="icon-card" onclick="load('script')">Script</div>
+    <div class="icon-card" onclick="load('chat')">Chat</div>
+  </div>
+</div>
+
+<script type="module">
+import {
+  auth,
+  signOut,
+  onAuthStateChanged
+} from "./firebase.js";
+
+onAuthStateChanged(auth, user => {
+  if (!user) window.location.href = "index";
+});
+
+logoutBtn.onclick = () => signOut(auth);
+
+// Simple loader
+function load(section) {
+  main.innerHTML = `<h2>${section}</h2><p>Load ${section} content here…</p>`;
+}
+</script>
+
+</body>
+</html>
