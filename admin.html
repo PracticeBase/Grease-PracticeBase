@@ -142,6 +142,7 @@ body {
   border-radius:var(--radius-md);
   display:flex;
   justify-content:space-between;
+  align-items:center;
 }
 .pill {
   border:1px solid #000;
@@ -167,6 +168,7 @@ body {
   <div class="title">Admin Dashboard</div>
   <button class="nav-btn active" data-section="add">Add Content</button>
   <button class="nav-btn" data-section="view">View All</button>
+  <button class="nav-btn" data-section="users">Users</button>
   <button class="nav-btn" id="logoutBtn">Sign out</button>
 </div>
 
@@ -175,18 +177,26 @@ body {
 <script type="module">
 import {
   auth, db, onAuthStateChanged, signOut,
-  collection, addDoc, serverTimestamp, ADMIN_EMAILS
+  collection, addDoc, serverTimestamp
 } from "./firebase.js";
 import {
-  doc, setDoc, getDoc, onSnapshot, query, orderBy
+  doc, setDoc, getDoc, onSnapshot, query, orderBy, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 /* AUTH */
-onAuthStateChanged(auth, user => {
-  if (!user || !ADMIN_EMAILS.includes(user.email)) {
+onAuthStateChanged(auth, async user => {
+  if (!user) {
     window.location.href = "index";
+    return;
+  }
+
+  // Check role
+  const roleDoc = await getDoc(doc(db, "users", user.uid));
+  if (!roleDoc.exists() || roleDoc.data().role !== "admin") {
+    window.location.href = "platform";
   }
 });
+
 logoutBtn.onclick = () => signOut(auth);
 
 /* NAVIGATION */
@@ -362,7 +372,62 @@ function loadSection(section) {
 
     return;
   }
+
+  /* -------------------------
+     USER MANAGEMENT
+  -------------------------- */
+  if (section === "users") {
+    content.innerHTML = `
+      <h2>Manage Users</h2>
+      <div class="card">
+        <div id="usersList" class="list"><div>Loading…</div></div>
+      </div>
+    `;
+
+    const usersList = document.getElementById("usersList");
+
+    onSnapshot(collection(db, "users"), snap => {
+      usersList.innerHTML = "";
+      snap.forEach(docSnap => {
+        const u = docSnap.data();
+        const uid = docSnap.id;
+
+        usersList.innerHTML += `
+          <div class="list-item">
+            <div>
+              <strong>${u.email}</strong><br>
+              <span style="font-size:0.8rem;color:#555;">${u.role}</span>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn outline" onclick="promoteUser('${uid}')">Admin</button>
+              <button class="btn outline" onclick="demoteUser('${uid}')">Cast</button>
+              <button class="btn outline" onclick="deleteUser('${uid}')">Delete</button>
+            </div>
+          </div>
+        `;
+      });
+    });
+
+    return;
+  }
 }
+
+/* USER MANAGEMENT FUNCTIONS */
+window.promoteUser = async (uid) => {
+  await setDoc(doc(db, "users", uid), { role: "admin" }, { merge: true });
+  alert("User promoted to admin");
+};
+
+window.demoteUser = async (uid) => {
+  await setDoc(doc(db, "users", uid), { role: "cast" }, { merge: true });
+  alert("User demoted to cast");
+};
+
+window.deleteUser = async (uid) => {
+  if (!confirm("Delete this user?")) return;
+  await deleteDoc(doc(db, "users", uid));
+  alert("User deleted");
+};
 </script>
 </body>
 </html>
