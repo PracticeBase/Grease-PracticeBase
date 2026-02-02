@@ -6,21 +6,46 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+/* DESIGN SYSTEM */
+:root {
+  --bg: #f5f5f7;
+  --bg-card: #ffffff;
+  --bg-soft: #fafafa;
+
+  --text: #111;
+  --text-sub: #555;
+
+  --border: #ddd;
+  --accent: #000;
+
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-md: 0 8px 20px rgba(0,0,0,0.08);
+
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+}
+
+/* GLOBAL */
 body {
   margin:0;
-  background:#f5f5f7;
+  background:var(--bg);
   font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
-  color:#111;
+  color:var(--text);
 }
 
 /* NAVBAR */
 .navbar {
   background:#fff;
-  border-bottom:1px solid #ddd;
-  padding:12px 20px;
+  border-bottom:1px solid var(--border);
+  padding:var(--space-3) var(--space-4);
   display:flex;
   align-items:center;
-  gap:20px;
+  gap:var(--space-3);
   position:sticky;
   top:0;
   z-index:10;
@@ -30,8 +55,8 @@ body {
   font-size:1.1rem;
 }
 .nav-btn {
-  border-radius:999px;
-  border:2px solid #000;
+  border-radius:var(--radius-pill);
+  border:2px solid var(--accent);
   background:#fff;
   color:#000;
   padding:6px 14px;
@@ -48,80 +73,96 @@ body {
 .shell {
   max-width:1100px;
   margin:0 auto;
-  padding:20px 16px 40px;
+  padding:var(--space-4);
 }
+
+/* CARDS */
+.card {
+  background:var(--bg-card);
+  border-radius:var(--radius-lg);
+  padding:var(--space-4);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-md);
+}
+.card h2 {
+  margin:0 0 var(--space-2);
+  font-size:1rem;
+}
+
+/* GRID */
 .grid {
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:16px;
+  gap:var(--space-4);
 }
-.card {
-  background:#fff;
-  border-radius:16px;
-  padding:14px 14px 16px;
-  border:1px solid #ddd;
-  box-shadow:0 8px 20px rgba(0,0,0,0.06);
-}
-.card h2 {
-  margin:0 0 6px;
-  font-size:1rem;
-}
+
+/* FORMS */
 .field {
-  margin-bottom:8px;
+  margin-bottom:var(--space-3);
 }
 .field label {
   display:block;
   font-size:0.75rem;
-  margin-bottom:2px;
+  margin-bottom:4px;
 }
 .field input,
 .field textarea {
   width:100%;
-  padding:8px 10px;
-  border-radius:10px;
+  padding:var(--space-2);
+  border-radius:var(--radius-md);
   border:1px solid #ccc;
   font-size:0.85rem;
 }
+
+/* BUTTONS */
 .btn {
-  border-radius:999px;
-  border:2px solid #000;
-  background:#000;
+  border-radius:var(--radius-pill);
+  border:2px solid var(--accent);
+  background:var(--accent);
   color:#fff;
   padding:8px 14px;
   font-size:0.85rem;
   font-weight:600;
   cursor:pointer;
 }
-.status {
-  margin-top:8px;
-  font-size:0.8rem;
-  color:#0a7a2f;
-  min-height:1em;
+.btn.outline {
+  background:#fff;
+  color:#000;
 }
+
+/* LISTS */
 .list {
   display:flex;
   flex-direction:column;
-  gap:8px;
-  font-size:0.9rem;
+  gap:var(--space-2);
 }
 .list-item {
-  background:#f9f9fb;
-  padding:8px 10px;
-  border-radius:10px;
+  background:var(--bg-soft);
+  padding:var(--space-3);
+  border-radius:var(--radius-md);
   display:flex;
   justify-content:space-between;
 }
 .pill {
   border:1px solid #000;
   padding:2px 8px;
-  border-radius:999px;
+  border-radius:var(--radius-pill);
   font-size:0.75rem;
+}
+
+/* STATUS */
+.status {
+  margin-top:var(--space-2);
+  font-size:0.8rem;
+  color:#0a7a2f;
+  min-height:1em;
 }
 </style>
 </head>
 
 <body>
 
+<!-- NAVBAR -->
 <div class="navbar">
   <div class="title">Admin Dashboard</div>
   <button class="nav-btn active" data-section="add">Add Content</button>
@@ -140,21 +181,21 @@ import {
   doc, setDoc, getDoc, onSnapshot, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
+/* AUTH */
 onAuthStateChanged(auth, user => {
   if (!user || !ADMIN_EMAILS.includes(user.email)) {
     window.location.href = "index";
   }
 });
-
 logoutBtn.onclick = () => signOut(auth);
 
+/* NAVIGATION */
 const content = document.getElementById("content");
 const navBtns = [...document.querySelectorAll(".nav-btn[data-section]")];
 
 function setActive(section) {
   navBtns.forEach(b => b.classList.toggle("active", b.dataset.section === section));
 }
-
 navBtns.forEach(btn => {
   btn.onclick = () => {
     setActive(btn.dataset.section);
@@ -162,12 +203,14 @@ navBtns.forEach(btn => {
   };
 });
 
+/* LOAD SECTIONS */
 loadSection("add");
 
-/* -------------------------
-   SECTION: ADD CONTENT
--------------------------- */
 function loadSection(section) {
+
+  /* -------------------------
+     ADD CONTENT
+  -------------------------- */
   if (section === "add") {
     content.innerHTML = `
       <div class="grid">
@@ -215,8 +258,8 @@ function loadSection(section) {
       </div>
     `;
 
-    // Add logic
-    document.getElementById("annAddBtn").onclick = async () => {
+    /* ADD LOGIC */
+    annAddBtn.onclick = async () => {
       await addDoc(collection(db,"announcements"),{
         title:annTitle.value,
         message:annMessage.value,
@@ -226,7 +269,7 @@ function loadSection(section) {
       annStatus.textContent = "Added!";
     };
 
-    document.getElementById("schAddBtn").onclick = async () => {
+    schAddBtn.onclick = async () => {
       await addDoc(collection(db,"schedule"),{
         title:schTitle.value,
         date:schDate.value,
@@ -237,7 +280,7 @@ function loadSection(section) {
       schStatus.textContent = "Added!";
     };
 
-    document.getElementById("trkAddBtn").onclick = async () => {
+    trkAddBtn.onclick = async () => {
       await addDoc(collection(db,"tracks"),{
         title:trkTitle.value,
         url:trkUrl.value,
@@ -247,7 +290,7 @@ function loadSection(section) {
       trkStatus.textContent = "Added!";
     };
 
-    document.getElementById("vidAddBtn").onclick = async () => {
+    vidAddBtn.onclick = async () => {
       await addDoc(collection(db,"videos"),{
         title:vidTitle.value,
         url:vidUrl.value,
@@ -257,7 +300,7 @@ function loadSection(section) {
       vidStatus.textContent = "Added!";
     };
 
-    document.getElementById("scriptSaveBtn").onclick = async () => {
+    scriptSaveBtn.onclick = async () => {
       await setDoc(doc(db,"settings","script"),{url:scriptUrl.value});
       scriptStatus.textContent = "Saved!";
     };
@@ -266,7 +309,7 @@ function loadSection(section) {
   }
 
   /* -------------------------
-     SECTION: VIEW EVERYTHING
+     VIEW EVERYTHING
   -------------------------- */
   if (section === "view") {
     content.innerHTML = `
