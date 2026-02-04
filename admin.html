@@ -5,6 +5,9 @@
 <title>Admin · Platform</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- ICON CDN -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
 <style>
 /* DESIGN SYSTEM */
 :root {
@@ -36,44 +39,70 @@ body {
   background:var(--bg);
   font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
   color:var(--text);
+  display:flex;
+  height:100vh;
+  overflow:hidden;
 }
 
-/* NAVBAR */
-.navbar {
+/* SIDEBAR */
+.sidebar {
+  width:240px;
   background:#fff;
-  border-bottom:1px solid var(--border);
-  padding:var(--space-3) var(--space-4);
+  border-right:1px solid var(--border);
+  padding:var(--space-4) var(--space-3);
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-2);
+}
+
+.logo {
+  font-weight:700;
+  font-size:1.2rem;
+  margin-bottom:var(--space-4);
+}
+
+.nav-item {
   display:flex;
   align-items:center;
-  gap:var(--space-3);
-  position:sticky;
-  top:0;
-  z-index:10;
-}
-.navbar .title {
-  font-weight:700;
-  font-size:1.1rem;
-}
-.nav-btn {
-  border-radius:var(--radius-pill);
-  border:2px solid var(--accent);
-  background:#fff;
-  color:#000;
-  padding:6px 14px;
-  font-size:0.85rem;
-  font-weight:600;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
   cursor:pointer;
-}
-.nav-btn.active {
-  background:#000;
-  color:#fff;
+  font-weight:600;
+  border:2px solid transparent;
 }
 
-/* LAYOUT */
-.shell {
-  max-width:1100px;
-  margin:0 auto;
+.nav-item.active {
+  border-color:var(--accent);
+  background:var(--bg-soft);
+}
+
+.nav-item:hover {
+  background:#eee;
+}
+
+.nav-icon {
+  width:20px;
+  height:20px;
+}
+
+/* MAIN AREA */
+.main {
+  flex:1;
+  overflow:auto;
   padding:var(--space-4);
+}
+
+.section-title {
+  font-size:1.3rem;
+  font-weight:700;
+  margin:0 0 var(--space-2);
+}
+
+.section-sub {
+  margin:0 0 var(--space-4);
+  font-size:0.9rem;
+  color:var(--text-sub);
 }
 
 /* CARDS */
@@ -83,7 +112,9 @@ body {
   padding:var(--space-4);
   border:1px solid var(--border);
   box-shadow:var(--shadow-md);
+  margin-bottom:var(--space-4);
 }
+
 .card h2 {
   margin:0 0 var(--space-2);
   font-size:1rem;
@@ -124,10 +155,40 @@ body {
   font-size:0.85rem;
   font-weight:600;
   cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
+
 .btn.outline {
   background:#fff;
   color:#000;
+}
+
+/* BUTTON LOADER */
+.spinner {
+  width:16px;
+  height:16px;
+  border:3px solid rgba(255,255,255,0.4);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  display:none;
+}
+
+@keyframes spin {
+  to { transform:rotate(360deg); }
+}
+
+/* PAGE LOADER */
+.page-loader {
+  width:40px;
+  height:40px;
+  border:4px solid #ccc;
+  border-top-color:#000;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+  margin:40px auto;
 }
 
 /* LISTS */
@@ -163,16 +224,29 @@ body {
 
 <body>
 
-<!-- NAVBAR -->
-<div class="navbar">
-  <div class="title">Admin Dashboard</div>
-  <button class="nav-btn active" data-section="add">Add Content</button>
-  <button class="nav-btn" data-section="view">View All</button>
-  <button class="nav-btn" data-section="users">Users</button>
-  <button class="nav-btn" id="logoutBtn">Sign out</button>
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">Admin</div>
+
+  <div class="nav-item active" data-section="add">
+    <i data-lucide="plus" class="nav-icon"></i> Add Content
+  </div>
+
+  <div class="nav-item" data-section="view">
+    <i data-lucide="file-text" class="nav-icon"></i> View All
+  </div>
+
+  <div class="nav-item" data-section="users">
+    <i data-lucide="users" class="nav-icon"></i> Users
+  </div>
+
+  <div class="nav-item" id="logoutBtn">
+    <i data-lucide="log-out" class="nav-icon"></i> Sign out
+  </div>
 </div>
 
-<div class="shell" id="content"></div>
+<!-- MAIN -->
+<div class="main" id="main"></div>
 
 <script type="module">
 import {
@@ -183,53 +257,69 @@ import {
   doc, setDoc, getDoc, onSnapshot, query, orderBy, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-/* AUTH */
+/* INIT ICONS */
+lucide.createIcons();
+
+/* AUTH CHECK */
 onAuthStateChanged(auth, async user => {
   if (!user) {
     window.location.href = "index";
     return;
   }
 
-  // Check role
   const roleDoc = await getDoc(doc(db, "users", user.uid));
   if (!roleDoc.exists() || roleDoc.data().role !== "admin") {
     window.location.href = "platform";
   }
 });
 
+/* LOGOUT */
 logoutBtn.onclick = () => signOut(auth);
 
 /* NAVIGATION */
-const content = document.getElementById("content");
-const navBtns = [...document.querySelectorAll(".nav-btn[data-section]")];
+const main = document.getElementById("main");
+const navItems = [...document.querySelectorAll(".nav-item[data-section]")];
 
 function setActive(section) {
-  navBtns.forEach(b => b.classList.toggle("active", b.dataset.section === section));
+  navItems.forEach(i => i.classList.toggle("active", i.dataset.section === section));
 }
-navBtns.forEach(btn => {
-  btn.onclick = () => {
-    setActive(btn.dataset.section);
-    loadSection(btn.dataset.section);
+
+navItems.forEach(item => {
+  item.onclick = () => {
+    setActive(item.dataset.section);
+    loadSection(item.dataset.section);
   };
 });
 
-/* LOAD SECTIONS */
+/* INITIAL LOAD */
 loadSection("add");
 
+/* SECTION LOADER */
+function showLoader() {
+  main.innerHTML = `<div class="page-loader"></div>`;
+}
+
+/* MAIN SECTION HANDLER */
 function loadSection(section) {
 
   /* -------------------------
      ADD CONTENT
   -------------------------- */
   if (section === "add") {
-    content.innerHTML = `
+    main.innerHTML = `
+      <h1 class="section-title">Add Content</h1>
+      <p class="section-sub">Create announcements, rehearsals, tracks, videos, and script links.</p>
+
       <div class="grid">
 
         <div class="card">
           <h2>Add Announcement</h2>
           <div class="field"><label>Title</label><input id="annTitle"></div>
           <div class="field"><label>Message</label><textarea id="annMessage" rows="3"></textarea></div>
-          <button class="btn" id="annAddBtn">Add</button>
+          <button class="btn" id="annAddBtn">
+            <span class="btn-text">Add</span>
+            <div class="spinner"></div>
+          </button>
           <div class="status" id="annStatus"></div>
         </div>
 
@@ -238,7 +328,10 @@ function loadSection(section) {
           <div class="field"><label>Title</label><input id="schTitle"></div>
           <div class="field"><label>Date</label><input id="schDate" placeholder="2026-02-01"></div>
           <div class="field"><label>Time</label><input id="schTime" placeholder="18:00–21:00"></div>
-          <button class="btn" id="schAddBtn">Add</button>
+          <button class="btn" id="schAddBtn">
+            <span class="btn-text">Add</span>
+            <div class="spinner"></div>
+          </button>
           <div class="status" id="schStatus"></div>
         </div>
 
@@ -246,7 +339,10 @@ function loadSection(section) {
           <h2>Add Track</h2>
           <div class="field"><label>Title</label><input id="trkTitle"></div>
           <div class="field"><label>URL</label><input id="trkUrl"></div>
-          <button class="btn" id="trkAddBtn">Add</button>
+          <button class="btn" id="trkAddBtn">
+            <span class="btn-text">Add</span>
+            <div class="spinner"></div>
+          </button>
           <div class="status" id="trkStatus"></div>
         </div>
 
@@ -254,22 +350,41 @@ function loadSection(section) {
           <h2>Add Video</h2>
           <div class="field"><label>Title</label><input id="vidTitle"></div>
           <div class="field"><label>URL</label><input id="vidUrl"></div>
-          <button class="btn" id="vidAddBtn">Add</button>
+          <button class="btn" id="vidAddBtn">
+            <span class="btn-text">Add</span>
+            <div class="spinner"></div>
+          </button>
           <div class="status" id="vidStatus"></div>
         </div>
 
         <div class="card">
           <h2>Script URL</h2>
           <div class="field"><label>URL</label><input id="scriptUrl"></div>
-          <button class="btn" id="scriptSaveBtn">Save</button>
+          <button class="btn" id="scriptSaveBtn">
+            <span class="btn-text">Save</span>
+            <div class="spinner"></div>
+          </button>
           <div class="status" id="scriptStatus"></div>
         </div>
 
       </div>
     `;
 
+    /* BUTTON LOADING HELPERS */
+    function startLoading(btn) {
+      btn.querySelector(".btn-text").style.opacity = "0";
+      btn.querySelector(".spinner").style.display = "block";
+      btn.disabled = true;
+    }
+    function stopLoading(btn) {
+      btn.querySelector(".btn-text").style.opacity = "1";
+      btn.querySelector(".spinner").style.display = "none";
+      btn.disabled = false;
+    }
+
     /* ADD LOGIC */
     annAddBtn.onclick = async () => {
+      startLoading(annAddBtn);
       await addDoc(collection(db,"announcements"),{
         title:annTitle.value,
         message:annMessage.value,
@@ -277,9 +392,11 @@ function loadSection(section) {
       });
       annTitle.value = annMessage.value = "";
       annStatus.textContent = "Added!";
+      stopLoading(annAddBtn);
     };
 
     schAddBtn.onclick = async () => {
+      startLoading(schAddBtn);
       await addDoc(collection(db,"schedule"),{
         title:schTitle.value,
         date:schDate.value,
@@ -288,9 +405,11 @@ function loadSection(section) {
       });
       schTitle.value = schDate.value = schTime.value = "";
       schStatus.textContent = "Added!";
+      stopLoading(schAddBtn);
     };
 
     trkAddBtn.onclick = async () => {
+      startLoading(trkAddBtn);
       await addDoc(collection(db,"tracks"),{
         title:trkTitle.value,
         url:trkUrl.value,
@@ -298,9 +417,11 @@ function loadSection(section) {
       });
       trkTitle.value = trkUrl.value = "";
       trkStatus.textContent = "Added!";
+      stopLoading(trkAddBtn);
     };
 
     vidAddBtn.onclick = async () => {
+      startLoading(vidAddBtn);
       await addDoc(collection(db,"videos"),{
         title:vidTitle.value,
         url:vidUrl.value,
@@ -308,11 +429,14 @@ function loadSection(section) {
       });
       vidTitle.value = vidUrl.value = "";
       vidStatus.textContent = "Added!";
+      stopLoading(vidAddBtn);
     };
 
     scriptSaveBtn.onclick = async () => {
+      startLoading(scriptSaveBtn);
       await setDoc(doc(db,"settings","script"),{url:scriptUrl.value});
       scriptStatus.textContent = "Saved!";
+      stopLoading(scriptSaveBtn);
     };
 
     return;
@@ -322,53 +446,60 @@ function loadSection(section) {
      VIEW EVERYTHING
   -------------------------- */
   if (section === "view") {
-    content.innerHTML = `
-      <h2>All Data</h2>
-      <div class="grid">
-        <div class="card"><h2>Announcements</h2><div id="annList" class="list"></div></div>
-        <div class="card"><h2>Rehearsals</h2><div id="schList" class="list"></div></div>
-        <div class="card"><h2>Tracks</h2><div id="trkList" class="list"></div></div>
-        <div class="card"><h2>Videos</h2><div id="vidList" class="list"></div></div>
-        <div class="card"><h2>Chat</h2><div id="chatList" class="list"></div></div>
-      </div>
-    `;
+    showLoader();
 
-    onSnapshot(query(collection(db,"announcements"),orderBy("createdAt","desc")), snap=>{
-      annList.innerHTML = "";
-      snap.forEach(d=>{
-        annList.innerHTML += `<div class="list-item"><span>${d.data().title}</span></div>`;
-      });
-    });
+    setTimeout(() => {
+      main.innerHTML = `
+        <h1 class="section-title">All Content</h1>
+        <p class="section-sub">Announcements, rehearsals, tracks, videos, and chat.</p>
 
-    onSnapshot(query(collection(db,"schedule"),orderBy("date","asc")), snap=>{
-      schList.innerHTML = "";
-      snap.forEach(d=>{
-        const x=d.data();
-        schList.innerHTML += `<div class="list-item"><span>${x.title}</span><span class="pill">${x.date}</span></div>`;
-      });
-    });
+        <div class="grid">
+          <div class="card"><h2>Announcements</h2><div id="annList" class="list"></div></div>
+          <div class="card"><h2>Rehearsals</h2><div id="schList" class="list"></div></div>
+          <div class="card"><h2>Tracks</h2><div id="trkList" class="list"></div></div>
+          <div class="card"><h2>Videos</h2><div id="vidList" class="list"></div></div>
+          <div class="card"><h2>Chat</h2><div id="chatList" class="list"></div></div>
+        </div>
+      `;
 
-    onSnapshot(collection(db,"tracks"), snap=>{
-      trkList.innerHTML = "";
-      snap.forEach(d=>{
-        trkList.innerHTML += `<div class="list-item"><span>${d.data().title}</span></div>`;
+      onSnapshot(query(collection(db,"announcements"),orderBy("createdAt","desc")), snap=>{
+        annList.innerHTML = "";
+        snap.forEach(d=>{
+          annList.innerHTML += `<div class="list-item"><span>${d.data().title}</span></div>`;
+        });
       });
-    });
 
-    onSnapshot(collection(db,"videos"), snap=>{
-      vidList.innerHTML = "";
-      snap.forEach(d=>{
-        vidList.innerHTML += `<div class="list-item"><span>${d.data().title}</span></div>`;
+      onSnapshot(query(collection(db,"schedule"),orderBy("date","asc")), snap=>{
+        schList.innerHTML = "";
+        snap.forEach(d=>{
+          const x=d.data();
+          schList.innerHTML += `<div class="list-item"><span>${x.title}</span><span class="pill">${x.date}</span></div>`;
+        });
       });
-    });
 
-    onSnapshot(query(collection(db,"chat"),orderBy("createdAt","asc")), snap=>{
-      chatList.innerHTML = "";
-      snap.forEach(d=>{
-        const x=d.data();
-        chatList.innerHTML += `<div class="list-item"><span>${x.user}: ${x.text}</span></div>`;
+      onSnapshot(collection(db,"tracks"), snap=>{
+        trkList.innerHTML = "";
+        snap.forEach(d=>{
+          trkList.innerHTML += `<div class="list-item"><span>${d.data().title}</span></div>`;
+        });
       });
-    });
+
+      onSnapshot(collection(db,"videos"), snap=>{
+        vidList.innerHTML = "";
+        snap.forEach(d=>{
+          vidList.innerHTML += `<div class="list-item"><span>${d.data().title}</span></div>`;
+        });
+      });
+
+      onSnapshot(query(collection(db,"chat"),orderBy("createdAt","asc")), snap=>{
+        chatList.innerHTML = "";
+        snap.forEach(d=>{
+          const x=d.data();
+          chatList.innerHTML += `<div class="list-item"><span>${x.user}: ${x.text}</span></div>`;
+        });
+      });
+
+    }, 300);
 
     return;
   }
@@ -377,36 +508,43 @@ function loadSection(section) {
      USER MANAGEMENT
   -------------------------- */
   if (section === "users") {
-    content.innerHTML = `
-      <h2>Manage Users</h2>
-      <div class="card">
-        <div id="usersList" class="list"><div>Loading…</div></div>
-      </div>
-    `;
+    showLoader();
 
-    const usersList = document.getElementById("usersList");
+    setTimeout(() => {
+      main.innerHTML = `
+        <h1 class="section-title">User Management</h1>
+        <p class="section-sub">Promote, demote, or delete users.</p>
 
-    onSnapshot(collection(db, "users"), snap => {
-      usersList.innerHTML = "";
-      snap.forEach(docSnap => {
-        const u = docSnap.data();
-        const uid = docSnap.id;
+        <div class="card">
+          <div id="usersList" class="list"><div>Loading…</div></div>
+        </div>
+      `;
 
-        usersList.innerHTML += `
-          <div class="list-item">
-            <div>
-              <strong>${u.email}</strong><br>
-              <span style="font-size:0.8rem;color:#555;">${u.role}</span>
+      const usersList = document.getElementById("usersList");
+
+      onSnapshot(collection(db, "users"), snap => {
+        usersList.innerHTML = "";
+        snap.forEach(docSnap => {
+          const u = docSnap.data();
+          const uid = docSnap.id;
+
+          usersList.innerHTML += `
+            <div class="list-item">
+              <div>
+                <strong>${u.email}</strong><br>
+                <span style="font-size:0.8rem;color:#555;">${u.role}</span>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn outline" onclick="promoteUser('${uid}')">Admin</button>
+                <button class="btn outline" onclick="demoteUser('${uid}')">Cast</button>
+                <button class="btn outline" onclick="deleteUser('${uid}')">Delete</button>
+              </div>
             </div>
-            <div style="display:flex;gap:6px;">
-              <button class="btn outline" onclick="promoteUser('${uid}')">Admin</button>
-              <button class="btn outline" onclick="demoteUser('${uid}')">Cast</button>
-              <button class="btn outline" onclick="deleteUser('${uid}')">Delete</button>
-            </div>
-          </div>
-        `;
+          `;
+        });
       });
-    });
+
+    }, 300);
 
     return;
   }
@@ -429,5 +567,6 @@ window.deleteUser = async (uid) => {
   alert("User deleted");
 };
 </script>
+
 </body>
 </html>
