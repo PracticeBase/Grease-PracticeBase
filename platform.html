@@ -1,111 +1,494 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform · Cast Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ICON CDN -->
+<script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-body {
-  margin:0;
-  background:#f5f5f7;
-  font-family:system-ui;
-  display:flex;
-  height:100vh;
+/* DESIGN SYSTEM */
+:root {
+  --bg: #f5f5f7;
+  --bg-card: #ffffff;
+  --bg-soft: #fafafa;
+
+  --text: #111;
+  --text-sub: #555;
+
+  --border: #ddd;
+  --accent: #000;
+
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-md: 0 8px 20px rgba(0,0,0,0.08);
+
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
 }
 
-/* Sidebar */
+/* GLOBAL */
+body {
+  margin:0;
+  background:var(--bg);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  color:var(--text);
+  display:flex;
+  height:100vh;
+  overflow:hidden;
+}
+
+/* SIDEBAR */
 .sidebar {
   width:240px;
   background:#fff;
-  border-right:1px solid #ddd;
-  padding:20px;
+  border-right:1px solid var(--border);
+  padding:var(--space-4) var(--space-3);
   display:flex;
   flex-direction:column;
-  gap:12px;
-}
-.sidebar a {
-  padding:10px 14px;
-  border-radius:10px;
-  font-weight:600;
-  text-decoration:none;
-  color:#000;
-  border:2px solid #000;
-  background:#fff;
+  gap:var(--space-2);
 }
 
-/* Main */
-.main {
-  flex:1;
-  padding:24px;
-  overflow:auto;
+.logo {
+  font-weight:700;
+  font-size:1.2rem;
+  margin-bottom:var(--space-4);
 }
-.grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:16px;
-}
-.icon-card {
-  background:#fff;
-  padding:20px;
-  border-radius:16px;
-  text-align:center;
-  border:1px solid #ddd;
+
+.nav-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
   cursor:pointer;
   font-weight:600;
-  box-shadow:0 6px 14px rgba(0,0,0,0.06);
+  border:2px solid transparent;
+}
+
+.nav-item.active {
+  border-color:var(--accent);
+  background:var(--bg-soft);
+}
+
+.nav-item:hover {
+  background:#eee;
+}
+
+.nav-icon {
+  width:20px;
+  height:20px;
+}
+
+/* MAIN AREA */
+.main {
+  flex:1;
+  overflow:auto;
+  padding:var(--space-4);
+}
+
+.section-title {
+  font-size:1.3rem;
+  font-weight:700;
+  margin:0 0 var(--space-2);
+}
+
+.section-sub {
+  margin:0 0 var(--space-4);
+  font-size:0.9rem;
+  color:var(--text-sub);
+}
+
+/* CARDS */
+.card {
+  background:var(--bg-card);
+  border-radius:var(--radius-lg);
+  padding:var(--space-4);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-md);
+  margin-bottom:var(--space-4);
+}
+
+.card h2 {
+  margin:0 0 var(--space-2);
+  font-size:1rem;
+}
+
+/* GRID */
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:var(--space-4);
+}
+
+/* LISTS */
+.list {
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-2);
+}
+.list-item {
+  background:var(--bg-soft);
+  padding:var(--space-3);
+  border-radius:var(--radius-md);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.pill {
+  border:1px solid #000;
+  padding:2px 8px;
+  border-radius:var(--radius-pill);
+  font-size:0.75rem;
+}
+
+/* CHAT */
+.chat-box {
+  display:flex;
+  gap:10px;
+  margin-top:var(--space-3);
+}
+.chat-box input {
+  flex:1;
+  padding:var(--space-2);
+  border-radius:var(--radius-md);
+  border:1px solid #ccc;
+}
+.chat-box button {
+  padding:10px 16px;
+  border-radius:var(--radius-pill);
+  border:2px solid var(--accent);
+  background:var(--accent);
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+}
+
+/* PAGE LOADER */
+.page-loader {
+  width:40px;
+  height:40px;
+  border:4px solid #ccc;
+  border-top-color:#000;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+  margin:40px auto;
+}
+
+@keyframes spin {
+  to { transform:rotate(360deg); }
 }
 </style>
 </head>
 
 <body>
 
-<script>
-// redirect mobile
-if (window.innerWidth < 700) {
-  window.location.href = "mobile";
-}
-</script>
-
+<!-- SIDEBAR -->
 <div class="sidebar">
-  <a href="#" onclick="load('home')">Home</a>
-  <a href="#" onclick="load('announcements')">Announcements</a>
-  <a href="#" onclick="load('schedule')">Rehearsals</a>
-  <a href="#" onclick="load('tracks')">Tracks</a>
-  <a href="#" onclick="load('videos')">Videos</a>
-  <a href="#" onclick="load('script')">Script</a>
-  <a href="#" onclick="load('chat')">Chat</a>
-  <a href="#" id="logoutBtn">Sign out</a>
-</div>
+  <div class="logo">Platform</div>
 
-<div class="main" id="main">
-  <h2>Dashboard</h2>
-  <div class="grid">
-    <div class="icon-card" onclick="load('announcements')">Announcements</div>
-    <div class="icon-card" onclick="load('schedule')">Rehearsals</div>
-    <div class="icon-card" onclick="load('tracks')">Tracks</div>
-    <div class="icon-card" onclick="load('videos')">Videos</div>
-    <div class="icon-card" onclick="load('script')">Script</div>
-    <div class="icon-card" onclick="load('chat')">Chat</div>
+  <div class="nav-item active" data-section="announcements">
+    <i data-lucide="megaphone" class="nav-icon"></i> Announcements
+  </div>
+
+  <div class="nav-item" data-section="schedule">
+    <i data-lucide="calendar" class="nav-icon"></i> Rehearsals
+  </div>
+
+  <div class="nav-item" data-section="tracks">
+    <i data-lucide="music" class="nav-icon"></i> Tracks
+  </div>
+
+  <div class="nav-item" data-section="videos">
+    <i data-lucide="video" class="nav-icon"></i> Videos
+  </div>
+
+  <div class="nav-item" data-section="script">
+    <i data-lucide="file-text" class="nav-icon"></i> Script
+  </div>
+
+  <div class="nav-item" data-section="chat">
+    <i data-lucide="message-circle" class="nav-icon"></i> Chat
+  </div>
+
+  <div class="nav-item" id="logoutBtn">
+    <i data-lucide="log-out" class="nav-icon"></i> Sign out
   </div>
 </div>
 
+<!-- MAIN -->
+<div class="main" id="main"></div>
+
 <script type="module">
 import {
-  auth,
-  signOut,
-  onAuthStateChanged
+  auth, db, onAuthStateChanged, signOut,
+  collection, addDoc, serverTimestamp
 } from "./firebase.js";
+import {
+  doc, getDoc, onSnapshot, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-onAuthStateChanged(auth, user => {
-  if (!user) window.location.href = "index";
+/* INIT ICONS */
+lucide.createIcons();
+
+/* AUTH CHECK */
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    window.location.href = "index";
+    return;
+  }
+
+  const roleDoc = await getDoc(doc(db, "users", user.uid));
+  if (!roleDoc.exists()) {
+    window.location.href = "index";
+  }
 });
 
+/* LOGOUT */
 logoutBtn.onclick = () => signOut(auth);
 
-// Simple loader
-function load(section) {
-  main.innerHTML = `<h2>${section}</h2><p>Load ${section} content here…</p>`;
+/* NAVIGATION */
+const main = document.getElementById("main");
+const navItems = [...document.querySelectorAll(".nav-item[data-section]")];
+
+function setActive(section) {
+  navItems.forEach(i => i.classList.toggle("active", i.dataset.section === section));
 }
+
+navItems.forEach(item => {
+  item.onclick = () => {
+    setActive(item.dataset.section);
+    loadSection(item.dataset.section);
+  };
+});
+
+/* INITIAL LOAD */
+loadSection("announcements");
+
+/* LOADER */
+function showLoader() {
+  main.innerHTML = `<div class="page-loader"></div>`;
+}
+
+/* SECTION HANDLER */
+function loadSection(section) {
+
+  /* -------------------------
+     ANNOUNCEMENTS
+  -------------------------- */
+  if (section === "announcements") {
+    showLoader();
+
+    setTimeout(() => {
+      main.innerHTML = `
+        <h1 class="section-title">Announcements</h1>
+        <p class="section-sub">Latest updates from the production team.</p>
+        <div class="card"><div id="annList" class="list"></div></div>
+      `;
+
+      onSnapshot(query(collection(db,"announcements"),orderBy("createdAt","desc")), snap=>{
+        annList.innerHTML = "";
+        snap.forEach(d=>{
+          const x = d.data();
+          annList.innerHTML += `<div class="list-item"><span>${x.title}</span></div>`;
+        });
+      });
+
+    }, 300);
+
+    return;
+  }
+
+  /* -------------------------
+     REHEARSALS
+  -------------------------- */
+  if (section === "schedule") {
+    showLoader();
+
+    setTimeout(() => {
+      main.innerHTML = `
+        <h1 class="section-title">Rehearsals</h1>
+        <p class="section-sub">Your upcoming rehearsal schedule.</p>
+        <div class="card"><div id="schList" class="list"></div></div>
+      `;
+
+      onSnapshot(query(collection(db,"schedule"),orderBy("date","asc")), snap=>{
+        schList.innerHTML = "";
+        snap.forEach(d=>{
+          const x = d.data();
+          schList.innerHTML += `
+            <div class="list-item">
+              <span>${x.title}</span>
+              <span class="pill">${x.date}</span>
+            </div>`;
+        });
+      });
+
+    }, 300);
+
+    return;
+  }
+
+  /* -------------------------
+     TRACKS
+  -------------------------- */
+  if (section === "tracks") {
+    showLoader();
+
+    setTimeout(() => {
+      main.innerHTML = `
+        <h1 class="section-title">Tracks</h1>
+        <p class="section-sub">Listen to rehearsal and performance tracks.</p>
+        <div class="card"><div id="trkList" class="list"></div></div>
+      `;
+
+      onSnapshot(collection(db,"tracks"), snap=>{
+        trkList.innerHTML = "";
+        snap.forEach(d=>{
+          const x = d.data();
+          trkList.innerHTML += `
+            <div class="list-item">
+              <span>${x.title}</span>
+              <a href="${x.url}" target="_blank" class="pill">Open</a>
+            </div>`;
+        });
+      });
+
+    }, 300);
+
+    return;
+  }
+
+  /* -------------------------
+     VIDEOS
+  -------------------------- */
+  if (section === "videos") {
+    showLoader();
+
+    setTimeout(() => {
+      main.innerHTML = `
+        <h1 class="section-title">Videos</h1>
+        <p class="section-sub">Watch choreography and reference videos.</p>
+        <div class="card"><div id="vidList" class="list"></div></div>
+      `;
+
+      onSnapshot(collection(db,"videos"), snap=>{
+        vidList.innerHTML = "";
+        snap.forEach(d=>{
+          const x = d.data();
+          vidList.innerHTML += `
+            <div class="list-item">
+              <span>${x.title}</span>
+              <a href="${x.url}" target="_blank" class="pill">Open</a>
+            </div>`;
+        });
+      });
+
+    }, 300);
+
+    return;
+  }
+
+  /* -------------------------
+     SCRIPT
+  -------------------------- */
+  if (section === "script") {
+    showLoader();
+
+    setTimeout(async () => {
+      const scriptDoc = await getDoc(doc(db,"settings","script"));
+      const url = scriptDoc.exists() ? scriptDoc.data().url : null;
+
+      main.innerHTML = `
+        <h1 class="section-title">Script</h1>
+        <p class="section-sub">Your show script.</p>
+
+        <div class="card">
+          ${url ? `<a href="${url}" target="_blank" class="btn outline">Open Script</a>` : "No script uploaded yet."}
+        </div>
+      `;
+    }, 300);
+
+    return;
+  }
+
+  /* -------------------------
+     CHAT
+  -------------------------- */
+  if (section === "chat") {
+    showLoader();
+
+    setTimeout(() => {
+      main.innerHTML = `
+        <h1 class="section-title">Chat</h1>
+        <p class="section-sub">Talk with your castmates.</p>
+
+        <div class="card">
+          <div id="chatList" class="list" style="max-height:400px; overflow:auto;"></div>
+
+          <div class="chat-box">
+            <input id="chatInput" placeholder="Type a message...">
+            <button id="chatSend">Send</button>
+          </div>
+        </div>
+      `;
+
+      const chatList = document.getElementById("chatList");
+      const chatInput = document.getElementById("chatInput");
+      const chatSend = document.getElementById("chatSend");
+
+      onSnapshot(query(collection(db,"chat"),orderBy("createdAt","asc")), snap=>{
+        chatList.innerHTML = "";
+        snap.forEach(d=>{
+          const x = d.data();
+          chatList.innerHTML += `<div class="list-item"><span>`
+
+        onSnapshot(query(collection(db,"chat"),orderBy("createdAt","asc")), snap=>{
+        chatList.innerHTML = "";
+        snap.forEach(d=>{
+          const x = d.data();
+          chatList.innerHTML += `
+            <div class="list-item">
+              <span><strong>${x.user}</strong>: ${x.text}</span>
+            </div>`;
+        });
+
+        // Auto-scroll to bottom
+        chatList.scrollTop = chatList.scrollHeight;
+      });
+
+      chatSend.onclick = async () => {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        const user = auth.currentUser;
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const username = userDoc.exists() ? userDoc.data().email : "User";
+
+        await addDoc(collection(db, "chat"), {
+          user: username,
+          text,
+          createdAt: serverTimestamp()
+        });
+
+        chatInput.value = "";
+      };
+
+      chatInput.addEventListener("keypress", e => {
+        if (e.key === "Enter") chatSend.click();
+      });
+
+    }, 300);
+
+    return;
+  }
+},
 </script>
 
 </body>
