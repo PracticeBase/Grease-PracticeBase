@@ -31,14 +31,14 @@ import {
    Replace the values below with your Firebase project's config.
 */
 const firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
-  appId: "REPLACE_WITH_YOUR_APP_ID"
+  apiKey: "AIzaSyBId5CDuFdsSHYP2Hip3bwkBsyut1f_0fI",
+  authDomain: "practicebase-8762h8b2.firebaseapp.com",
+  projectId: "practicebase-8762h8b2",
+  storageBucket: "practicebase-8762h8b2.firebasestorage.app",
+  messagingSenderId: "214656580811",
+  appId: "1:214656580811:web:0d113c9305729ae9c9ef4e",
+  measurementId: "G-FZ2JEGH91H"
 };
-
 /* Initialize */
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
