@@ -155,4 +155,5 @@ body{
   font-size:0.9rem;
   border-top:1px solid #000;
   z-index:10;
+  display: none;
 }
