@@ -150,612 +150,348 @@ body{display:flex;background:var(--bg);color:var(--text);height:100vh;overflow:h
 <div class="main" id="main"></div>
 
 <script type="module">
-/*
-  admin.html
-  Assumes ./firebase.js exports:
-  auth, db, onAuthStateChanged, signOut,
-  collection, addDoc, serverTimestamp,
-  doc, setDoc, getDoc, onSnapshot, query, orderBy,
-  updateDoc, deleteDoc
-*/
+// admin.js
+
+//
+// Requirements:
+// - /firebase.js must export: auth, db, app, onAuthStateChanged
+// - HTML must include elements with IDs used below (status, adminPanel, forms/buttons)
+// - Adjust collection names or field validation to match your Firestore schema
+
+import { auth, db, app, onAuthStateChanged } from '/firebase.js';
 import {
-  auth, db, onAuthStateChanged, signOut,
-  collection, addDoc, serverTimestamp,
-  doc, setDoc, getDoc, onSnapshot, query, orderBy,
-  updateDoc, deleteDoc
-} from "./firebase.js";
+  collection,
+  addDoc,
+  serverTimestamp,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  limit
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-/* INIT ICONS */
-lucide.createIcons();
+/* -------------------------
+   Helper UI functions
+   ------------------------- */
+function el(id) { return document.getElementById(id); }
 
-/* GLOBAL STATE */
-let currentUser = null;
-let currentUserEmail = null;
-let currentUserIsAdmin = false;
+function showStatus(msg, type = 'info') {
+  const s = el('status');
+  if (!s) return console[type === 'error' ? 'error' : 'log'](msg);
+  s.textContent = msg;
+  s.className = `status ${type}`;
+}
 
-/* AUTH CHECK */
-onAuthStateChanged(auth, async user => {
-  if (!user) {
-    window.location.href = "index";
-    return;
-  }
-  currentUser = user;
-  currentUserEmail = user.email || null;
+function showAdminPanel(show) {
+  const panel = el('adminPanel');
+  if (!panel) return;
+  panel.style.display = show ? 'block' : 'none';
+}
 
+/* -------------------------
+   Auth and admin check
+   ------------------------- */
+async function isAdminUser(uid) {
   try {
-    const udoc = await getDoc(doc(db,"users",user.uid));
-    if (!udoc.exists()) {
-      await setDoc(doc(db,"users",user.uid), { email: user.email || "", role: "cast" });
-      currentUserIsAdmin = false;
-    } else {
-      currentUserIsAdmin = (udoc.data().role === "admin");
-    }
+    const udoc = await getDoc(doc(db, 'users', uid));
+    return udoc.exists() && udoc.data().role === 'admin';
   } catch (err) {
-    console.error("Error reading user doc:", err);
-    currentUserIsAdmin = false;
-  }
-});
-
-/* NAV */
-const main = document.getElementById("main");
-const navItems = Array.from(document.querySelectorAll(".nav-item[data-section]"));
-const logoutBtn = document.getElementById("logoutBtn");
-
-function setActive(section){
-  navItems.forEach(n => n.classList.toggle("active", n.dataset.section === section));
-}
-
-navItems.forEach(item => {
-  item.addEventListener("click", () => {
-    const s = item.dataset.section;
-    setActive(s);
-    renderSection(s);
-  });
-});
-
-logoutBtn.addEventListener("click", () => signOut(auth));
-
-/* LOADER */
-function showLoader(){
-  main.innerHTML = `<div class="page-loader"></div>`;
-}
-
-/* BUTTON LOADING HELPERS */
-function startLoading(btn){
-  const txt = btn.querySelector(".btn-text");
-  const sp = btn.querySelector(".spinner");
-  if (txt) txt.style.opacity = "0";
-  if (sp) sp.style.display = "inline-block";
-  btn.disabled = true;
-}
-function stopLoading(btn){
-  const txt = btn.querySelector(".btn-text");
-  const sp = btn.querySelector(".spinner");
-  if (txt) txt.style.opacity = "1";
-  if (sp) sp.style.display = "none";
-  btn.disabled = false;
-}
-
-/* ESCAPE HTML helper */
-function escapeHtml(str){
-  if (str === undefined || str === null) return "";
-  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-}
-
-/* NOTIFICATIONS */
-async function ensureNotificationPermission(){
-  if (!("Notification" in window)) return false;
-  if (Notification.permission === "granted") return true;
-  if (Notification.permission === "denied") return false;
-  try {
-    const p = await Notification.requestPermission();
-    return p === "granted";
-  } catch {
+    console.error('isAdminUser error', err);
     return false;
   }
 }
-function showDeviceNotification(title, body){
-  if (!("Notification" in window)) return;
-  if (Notification.permission !== "granted") return;
+
+async function waitForAuthAndInit() {
+  // Wait for auth state to initialize
+  await new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => {
+      unsub();
+      resolve(user);
+    });
+  });
+
+  const user = auth.currentUser;
+  if (!user) {
+    showStatus('Not signed in. Please sign in to access admin features.', 'error');
+    showAdminPanel(false);
+    return;
+  }
+
+  showStatus(`Signed in as ${user.email} (uid: ${user.uid}). Checking admin role...`, 'info');
+
+  const admin = await isAdminUser(user.uid);
+  if (!admin) {
+    showStatus('You are not an admin. Admin features are disabled for this account.', 'error');
+    showAdminPanel(false);
+    return;
+  }
+
+  showStatus('Admin verified. You may manage content.', 'success');
+  showAdminPanel(true);
+  attachEventHandlers();
+  await loadInitialData();
+}
+
+/* -------------------------
+   CRUD operations (admin)
+   ------------------------- */
+
+// Announcements
+async function createAnnouncement(title, message) {
   try {
-    new Notification(title, { body, silent: false });
-  } catch (e) {
-    console.warn("Notification failed", e);
+    await addDoc(collection(db, 'announcements'), {
+      title: String(title || '').trim(),
+      message: String(message || '').trim(),
+      createdAt: serverTimestamp()
+    });
+    showStatus('Announcement created.', 'success');
+  } catch (err) {
+    console.error('createAnnouncement error', err);
+    showStatus(`Failed to create announcement: ${err.message}`, 'error');
   }
 }
 
-/* INITIAL */
-renderSection("announcements");
-
-/* RENDER SECTIONS */
-function renderSection(section){
-  if (section === "announcements") {
-    main.innerHTML = `
-      <div class="header-row">
-        <div>
-          <h2 class="section-title">Add Announcement</h2>
-          <p class="section-sub">Create a new announcement for the cast.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="field"><label>Title</label><input id="annTitle" placeholder="Rehearsal update"></div>
-        <div class="field"><label>Message</label><textarea id="annMessage" placeholder="Details..."></textarea></div>
-
-        <button class="btn" id="annAddBtn"><span class="btn-text">Add Announcement</span><span class="spinner"></span></button>
-        <div class="status" id="annStatus"></div>
-      </div>
-    `;
-
-    const annAddBtn = document.getElementById("annAddBtn");
-    const annTitle = document.getElementById("annTitle");
-    const annMessage = document.getElementById("annMessage");
-    const annStatus = document.getElementById("annStatus");
-
-    annAddBtn.onclick = async () => {
-      startLoading(annAddBtn);
-      try {
-        const title = annTitle.value.trim();
-        const message = annMessage.value.trim();
-        if (!title || !message) throw new Error("Title and message required");
-        await addDoc(collection(db,"announcements"), {
-          title,
-          message,
-          createdAt: serverTimestamp()
-        });
-        annTitle.value = ""; annMessage.value = "";
-        annStatus.textContent = "Announcement added.";
-      } catch (err) {
-        annStatus.textContent = err.message || "Error adding announcement.";
-        console.error(err);
-      } finally {
-        stopLoading(annAddBtn);
-      }
-    };
-
-    return;
-  }
-
-  if (section === "rehearsal") {
-    main.innerHTML = `
-      <div class="header-row">
-        <div>
-          <h2 class="section-title">Add Rehearsal</h2>
-          <p class="section-sub">Enter rehearsal details. Date format: DD/MM/YYYY</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="field"><label>Title</label><input id="schTitle" placeholder="Promo Film Dress Rehearsal"></div>
-        <div class="field"><label>Date (DD/MM/YYYY)</label><input id="schDate" placeholder="10/02/2026"></div>
-        <div class="field"><label>Time</label><input id="schTime" placeholder="AfterSchool"></div>
-        <div class="field"><label>Who</label><input id="schWho" placeholder="ALL CAST"></div>
-        <div class="field"><label>Extra Notes</label><input id="schExtra" placeholder="Dress Run for Promo film"></div>
-
-        <button class="btn" id="schAddBtn"><span class="btn-text">Add Rehearsal</span><span class="spinner"></span></button>
-        <div class="status" id="schStatus"></div>
-      </div>
-    `;
-
-    const schAddBtn = document.getElementById("schAddBtn");
-    const schTitle = document.getElementById("schTitle");
-    const schDate = document.getElementById("schDate");
-    const schTime = document.getElementById("schTime");
-    const schWho = document.getElementById("schWho");
-    const schExtra = document.getElementById("schExtra");
-    const schStatus = document.getElementById("schStatus");
-
-    schAddBtn.onclick = async () => {
-      startLoading(schAddBtn);
-      try {
-        const title = schTitle.value.trim();
-        const date = schDate.value.trim();
-        const time = schTime.value.trim();
-        const who = schWho.value.trim();
-        const extra = schExtra.value.trim();
-
-        if (!title || !date) throw new Error("Title and date required");
-
-        // Validate date format DD/MM/YYYY
-        const parts = date.split("/");
-        if (parts.length !== 3) throw new Error("Date must be DD/MM/YYYY");
-        const [dStr, mStr, yStr] = parts;
-        const d = parseInt(dStr,10), m = parseInt(mStr,10), y = parseInt(yStr,10);
-        if (isNaN(d) || isNaN(m) || isNaN(y)) throw new Error("Invalid date");
-
-        // Create timestamp at midnight UTC for sorting
-        const iso = `${y.toString().padStart(4,'0')}-${m.toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}T00:00:00Z`;
-        const sortTimestamp = new Date(iso).getTime();
-
-        await addDoc(collection(db,"schedule"), {
-          title,
-          date,
-          time,
-          who,
-          extra,
-          sortTimestamp,
-          createdAt: serverTimestamp()
-        });
-
-        schTitle.value = ""; schDate.value = ""; schTime.value = ""; schWho.value = ""; schExtra.value = "";
-        schStatus.textContent = "Rehearsal added.";
-      } catch (err) {
-        schStatus.textContent = err.message || "Error adding rehearsal.";
-        console.error(err);
-      } finally {
-        stopLoading(schAddBtn);
-      }
-    };
-
-    return;
-  }
-
-  if (section === "track") {
-    main.innerHTML = `
-      <div class="header-row">
-        <div>
-          <h2 class="section-title">Add Track</h2>
-          <p class="section-sub">Add audio tracks for rehearsals.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="field"><label>Title</label><input id="trkTitle" placeholder="Track name"></div>
-        <div class="field"><label>URL</label><input id="trkUrl" placeholder="https://..."></div>
-
-        <button class="btn" id="trkAddBtn"><span class="btn-text">Add Track</span><span class="spinner"></span></button>
-        <div class="status" id="trkStatus"></div>
-      </div>
-    `;
-
-    const trkAddBtn = document.getElementById("trkAddBtn");
-    const trkTitle = document.getElementById("trkTitle");
-    const trkUrl = document.getElementById("trkUrl");
-    const trkStatus = document.getElementById("trkStatus");
-
-    trkAddBtn.onclick = async () => {
-      startLoading(trkAddBtn);
-      try {
-        const title = trkTitle.value.trim();
-        const url = trkUrl.value.trim();
-        if (!title || !url) throw new Error("Title and URL required");
-        await addDoc(collection(db,"tracks"), {
-          title,
-          url,
-          createdAt: serverTimestamp()
-        });
-        trkTitle.value = ""; trkUrl.value = "";
-        trkStatus.textContent = "Track added.";
-      } catch (err) {
-        trkStatus.textContent = err.message || "Error adding track.";
-        console.error(err);
-      } finally {
-        stopLoading(trkAddBtn);
-      }
-    };
-
-    return;
-  }
-
-  if (section === "video") {
-    main.innerHTML = `
-      <div class="header-row">
-        <div>
-          <h2 class="section-title">Add Video</h2>
-          <p class="section-sub">Add reference or choreography videos.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="field"><label>Title</label><input id="vidTitle" placeholder="Video title"></div>
-        <div class="field"><label>URL</label><input id="vidUrl" placeholder="https://..."></div>
-
-        <button class="btn" id="vidAddBtn"><span class="btn-text">Add Video</span><span class="spinner"></span></button>
-        <div class="status" id="vidStatus"></div>
-      </div>
-    `;
-
-    const vidAddBtn = document.getElementById("vidAddBtn");
-    const vidTitle = document.getElementById("vidTitle");
-    const vidUrl = document.getElementById("vidUrl");
-    const vidStatus = document.getElementById("vidStatus");
-
-    vidAddBtn.onclick = async () => {
-      startLoading(vidAddBtn);
-      try {
-        const title = vidTitle.value.trim();
-        const url = vidUrl.value.trim();
-        if (!title || !url) throw new Error("Title and URL required");
-        await addDoc(collection(db,"videos"), {
-          title,
-          url,
-          createdAt: serverTimestamp()
-        });
-        vidTitle.value = ""; vidUrl.value = "";
-        vidStatus.textContent = "Video added.";
-      } catch (err) {
-        vidStatus.textContent = err.message || "Error adding video.";
-        console.error(err);
-      } finally {
-        stopLoading(vidAddBtn);
-      }
-    };
-
-    return;
-  }
-
-  if (section === "script") {
-    main.innerHTML = `
-      <div class="header-row">
-        <div>
-          <h2 class="section-title">Script URL</h2>
-          <p class="section-sub">Save a canonical script URL for cast to open.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="field"><label>Script URL</label><input id="scriptUrl" placeholder="https://..."></div>
-
-        <button class="btn" id="scriptSaveBtn"><span class="btn-text">Save Script URL</span><span class="spinner"></span></button>
-        <div class="status" id="scriptStatus"></div>
-      </div>
-    `;
-
-    const scriptSaveBtn = document.getElementById("scriptSaveBtn");
-    const scriptUrl = document.getElementById("scriptUrl");
-    const scriptStatus = document.getElementById("scriptStatus");
-
-    scriptSaveBtn.onclick = async () => {
-      startLoading(scriptSaveBtn);
-      try {
-        const url = scriptUrl.value.trim();
-        if (!url) throw new Error("URL required");
-        await setDoc(doc(db,"settings","script"), { url });
-        scriptUrl.value = "";
-        scriptStatus.textContent = "Script URL saved.";
-      } catch (err) {
-        scriptStatus.textContent = err.message || "Error saving script.";
-        console.error(err);
-      } finally {
-        stopLoading(scriptSaveBtn);
-      }
-    };
-
-    return;
-  }
-
-  if (section === "users") {
-    showLoader();
-    setTimeout(() => {
-      main.innerHTML = `
-        <div class="header-row">
-          <div>
-            <h2 class="section-title">Manage Users</h2>
-            <p class="section-sub">Promote/demote or delete users. Admin-only actions are enforced by Firestore rules.</p>
-          </div>
-        </div>
-
-        <div class="card">
-          <div id="usersList" class="list"><div class="small">Loading users…</div></div>
-        </div>
-      `;
-
-      const usersList = document.getElementById("usersList");
-
-      onSnapshot(query(collection(db,"users"), orderBy("email","asc")), snap => {
-        usersList.innerHTML = "";
-        snap.forEach(docSnap => {
-          const u = docSnap.data();
-          const uid = docSnap.id;
-          const email = escapeHtml(u.email || uid);
-          const role = escapeHtml(u.role || "cast");
-
-          const item = document.createElement("div");
-          item.className = "list-item";
-          item.innerHTML = `
-            <div>
-              <strong>${email}</strong>
-              <div class="small">${role}</div>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn outline" data-action="promote" data-uid="${uid}">Admin</button>
-              <button class="btn outline" data-action="demote" data-uid="${uid}">Cast</button>
-              <button class="btn outline" data-action="delete" data-uid="${uid}">Delete</button>
-            </div>
-          `;
-          usersList.appendChild(item);
-        });
-
-        usersList.querySelectorAll("button[data-action]").forEach(btn => {
-          btn.onclick = async () => {
-            const action = btn.dataset.action;
-            const uid = btn.dataset.uid;
-            try {
-              if (action === "promote") {
-                await setDoc(doc(db,"users",uid), { role: "admin" }, { merge: true });
-                alert("Promoted to admin");
-              } else if (action === "demote") {
-                await setDoc(doc(db,"users",uid), { role: "cast" }, { merge: true });
-                alert("Demoted to cast");
-              } else if (action === "delete") {
-                if (!confirm("Delete this user document? This does not delete their Auth account.")) return;
-                await deleteDoc(doc(db,"users",uid));
-                alert("User document deleted");
-              }
-            } catch (err) {
-              console.error(err);
-              alert("Action failed");
-            }
-          };
-        });
-      });
-
-    }, 200);
-
-    return;
-  }
-
-  if (section === "chat") {
-    main.innerHTML = `
-      <div class="header-row">
-        <div>
-          <h2 class="section-title">Chat Moderation</h2>
-          <p class="section-sub">Everyone can post. Admins can edit or delete any message. Users can delete their own messages.</p>
-        </div>
-        <div>
-          <button id="notifyBtn" class="btn outline">Enable Notifications</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div id="chatList" class="list" style="max-height:520px; overflow:auto;"></div>
-
-        <div class="chat-box">
-          <input id="chatInput" placeholder="Type a message...">
-          <button id="chatSend" class="btn"><span class="btn-text">Send</span></button>
-        </div>
-      </div>
-    `;
-
-    const chatList = document.getElementById("chatList");
-    const chatInput = document.getElementById("chatInput");
-    const chatSend = document.getElementById("chatSend");
-    const notifyBtn = document.getElementById("notifyBtn");
-
-    notifyBtn.onclick = async () => {
-      const ok = await ensureNotificationPermission();
-      notifyBtn.textContent = ok ? "Notifications Enabled" : "Enable Notifications";
-    };
-
-    // Listen for chat and render with moderation controls
-    onSnapshot(query(collection(db,"chat"), orderBy("createdAt","asc")), snap => {
-      // show device notifications for new messages
-      snap.docChanges().forEach(change => {
-        if (change.type === "added") {
-          const data = change.doc.data();
-          const author = data.user || "Someone";
-          const text = data.text || "";
-          // notify if not from current user
-          if (currentUserEmail && data.user !== currentUserEmail) {
-            showDeviceNotification(`New message from ${author}`, text);
-          }
-        }
-      });
-
-      chatList.innerHTML = "";
-      snap.forEach(d => {
-        const x = d.data();
-        const id = d.id;
-        const user = escapeHtml(x.user);
-        const text = escapeHtml(x.text);
-        const ts = x.createdAt && x.createdAt.toDate ? x.createdAt.toDate().toLocaleString() : "";
-        const isOwner = (currentUserEmail && x.user === currentUserEmail);
-        const isAdmin = currentUserIsAdmin;
-
-        const actions = [];
-        if (isAdmin) actions.push(`<button class="btn outline" data-action="edit" data-id="${id}">Edit</button>`);
-        if (isAdmin || isOwner) actions.push(`<button class="btn outline" data-action="delete" data-id="${id}">Delete</button>`);
-
-        chatList.innerHTML += `
-          <div class="list-item" data-id="${id}">
-            <div class="chat-message">
-              <div style="min-width:160px;">
-                <strong>${user}</strong>
-                <div class="chat-meta">${ts}</div>
-              </div>
-              <div style="flex:1;">
-                <div class="msg-text" data-id="${id}">${text}</div>
-                <div class="msg-edit-area" data-id="${id}"></div>
-              </div>
-              <div class="chat-actions">
-                ${actions.join("")}
-              </div>
-            </div>
-          </div>
-        `;
-      });
-
-      // attach action handlers
-      chatList.querySelectorAll("button[data-action]").forEach(btn => {
-        btn.onclick = async () => {
-          const action = btn.dataset.action;
-          const id = btn.dataset.id;
-          if (action === "delete") {
-            if (!confirm("Delete this message?")) return;
-            try {
-              await deleteDoc(doc(db,"chat",id));
-            } catch (err) {
-              console.error("Delete failed", err);
-              alert("Delete failed");
-            }
-          } else if (action === "edit") {
-            // admin inline edit
-            const container = chatList.querySelector(`.msg-edit-area[data-id="${id}"]`);
-            const msgTextEl = chatList.querySelector(`.msg-text[data-id="${id}"]`);
-            if (!container || !msgTextEl) return;
-            const currentText = msgTextEl.textContent || "";
-            container.innerHTML = `
-              <div class="msg-edit">
-                <input type="text" class="msg-edit-input" value="${escapeHtml(currentText)}">
-                <button class="btn outline save-edit" data-id="${id}">Save</button>
-                <button class="btn outline cancel-edit" data-id="${id}">Cancel</button>
-              </div>
-            `;
-            const saveBtn = container.querySelector(".save-edit");
-            const cancelBtn = container.querySelector(".cancel-edit");
-            const input = container.querySelector(".msg-edit-input");
-
-            cancelBtn.onclick = () => { container.innerHTML = ""; };
-            saveBtn.onclick = async () => {
-              const newText = input.value.trim();
-              if (!newText) { alert("Message cannot be empty"); return; }
-              try {
-                await updateDoc(doc(db,"chat",id), { text: newText });
-                container.innerHTML = "";
-              } catch (err) {
-                console.error("Update failed", err);
-                alert("Update failed");
-              }
-            };
-          }
-        };
-      });
-
-      // scroll to bottom
-      chatList.scrollTop = chatList.scrollHeight;
+// Schedule
+async function createScheduleItem(data) {
+  try {
+    // data: { title, date, time?, who?, extra? }
+    await addDoc(collection(db, 'schedule'), {
+      title: String(data.title || '').trim(),
+      date: String(data.date || '').trim(),
+      time: data.time ? String(data.time) : null,
+      who: data.who ? String(data.who) : null,
+      extra: data.extra ? String(data.extra) : null,
+      sortTimestamp: Date.now(),
+      createdAt: serverTimestamp()
     });
-
-    // send message
-    chatSend.onclick = async () => {
-      const text = chatInput.value.trim();
-      if (!text) return;
-      const username = currentUserEmail || "User";
-      try {
-        await addDoc(collection(db, "chat"), {
-          user: username,
-          text,
-          createdAt: serverTimestamp()
-        });
-        chatInput.value = "";
-      } catch (err) {
-        console.error("Send failed", err);
-        alert("Message failed to send");
-      }
-    };
-
-    chatInput.addEventListener("keypress", e => {
-      if (e.key === "Enter") chatSend.click();
-    });
-
-    // request permission proactively (non-blocking)
-    ensureNotificationPermission();
-
-    return;
+    showStatus('Schedule item created.', 'success');
+  } catch (err) {
+    console.error('createScheduleItem error', err);
+    showStatus(`Failed to create schedule item: ${err.message}`, 'error');
   }
-
-  // fallback
-  main.innerHTML = `<div class="card"><div class="small">Select an action from the left.</div></div>`;
 }
+
+// Tracks
+async function createTrack(title, url) {
+  try {
+    await addDoc(collection(db, 'tracks'), {
+      title: String(title || '').trim(),
+      url: String(url || '').trim(),
+      createdAt: serverTimestamp()
+    });
+    showStatus('Track created.', 'success');
+  } catch (err) {
+    console.error('createTrack error', err);
+    showStatus(`Failed to create track: ${err.message}`, 'error');
+  }
+}
+
+// Videos
+async function createVideo(title, url) {
+  try {
+    await addDoc(collection(db, 'videos'), {
+      title: String(title || '').trim(),
+      url: String(url || '').trim(),
+      createdAt: serverTimestamp()
+    });
+    showStatus('Video created.', 'success');
+  } catch (err) {
+    console.error('createVideo error', err);
+    showStatus(`Failed to create video: ${err.message}`, 'error');
+  }
+}
+
+// Settings (single doc)
+async function setSetting(docId, data) {
+  try {
+    await setDoc(doc(db, 'settings', docId), data, { merge: true });
+    showStatus(`Setting ${docId} saved.`, 'success');
+  } catch (err) {
+    console.error('setSetting error', err);
+    showStatus(`Failed to save setting: ${err.message}`, 'error');
+  }
+}
+
+/* -------------------------
+   Users management (admin)
+   ------------------------- */
+
+async function listUsers(limitCount = 50) {
+  try {
+    const q = query(collection(db, 'users'), orderBy('__name__'), limit(limitCount));
+    const snap = await getDocs(q);
+    const users = [];
+    snap.forEach(d => users.push({ id: d.id, ...d.data() }));
+    return users;
+  } catch (err) {
+    console.error('listUsers error', err);
+    showStatus(`Failed to list users: ${err.message}`, 'error');
+    return [];
+  }
+}
+
+async function updateUserRole(uid, role) {
+  try {
+    await updateDoc(doc(db, 'users', uid), { role });
+    showStatus(`Updated role for ${uid} to ${role}`, 'success');
+  } catch (err) {
+    console.error('updateUserRole error', err);
+    showStatus(`Failed to update user role: ${err.message}`, 'error');
+  }
+}
+
+async function deleteUserDoc(uid) {
+  try {
+    await deleteDoc(doc(db, 'users', uid));
+    showStatus(`Deleted users/${uid}`, 'success');
+  } catch (err) {
+    console.error('deleteUserDoc error', err);
+    showStatus(`Failed to delete user doc: ${err.message}`, 'error');
+  }
+}
+
+/* -------------------------
+   UI wiring and initial load
+   ------------------------- */
+
+function attachEventHandlers() {
+  // Announcement form
+  const annForm = el('announcementForm');
+  if (annForm) {
+    annForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const title = el('announcementTitle').value;
+      const message = el('announcementMessage').value;
+      await createAnnouncement(title, message);
+      annForm.reset();
+      await refreshUsersListIfVisible();
+    });
+  }
+
+  // Schedule form
+  const schedForm = el('scheduleForm');
+  if (schedForm) {
+    schedForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const data = {
+        title: el('scheduleTitle').value,
+        date: el('scheduleDate').value,
+        time: el('scheduleTime').value,
+        who: el('scheduleWho').value,
+        extra: el('scheduleExtra').value
+      };
+      await createScheduleItem(data);
+      schedForm.reset();
+    });
+  }
+
+  // Track form
+  const trackForm = el('trackForm');
+  if (trackForm) {
+    trackForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      await createTrack(el('trackTitle').value, el('trackUrl').value);
+      trackForm.reset();
+    });
+  }
+
+  // Video form
+  const videoForm = el('videoForm');
+  if (videoForm) {
+    videoForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      await createVideo(el('videoTitle').value, el('videoUrl').value);
+      videoForm.reset();
+    });
+  }
+
+  // Settings form
+  const settingsForm = el('settingsForm');
+  if (settingsForm) {
+    settingsForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = el('settingsId').value || 'default';
+      const data = { value: el('settingsValue').value };
+      await setSetting(id, data);
+      settingsForm.reset();
+    });
+  }
+
+  // Refresh users button
+  const refreshUsersBtn = el('refreshUsers');
+  if (refreshUsersBtn) {
+    refreshUsersBtn.addEventListener('click', refreshUsersListIfVisible);
+  }
+}
+
+async function loadInitialData() {
+  // Optionally populate users list if the UI has a container
+  await refreshUsersListIfVisible();
+}
+
+async function refreshUsersListIfVisible() {
+  const container = el('usersList');
+  if (!container) return;
+  container.innerHTML = 'Loading users...';
+  const users = await listUsers(200);
+  container.innerHTML = '';
+  if (!users.length) {
+    container.textContent = 'No users found.';
+    return;
+  }
+  users.forEach(u => {
+    const row = document.createElement('div');
+    row.className = 'userRow';
+    row.innerHTML = `
+      <strong>${u.id}</strong> &nbsp; ${u.email || ''} &nbsp; <em>${u.role || ''}</em>
+      <button data-uid="${u.id}" class="promoteBtn">Make admin</button>
+      <button data-uid="${u.id}" class="demoteBtn">Demote</button>
+      <button data-uid="${u.id}" class="deleteBtn">Delete doc</button>
+    `;
+    container.appendChild(row);
+  });
+
+  // Attach handlers
+  container.querySelectorAll('.promoteBtn').forEach(b => {
+    b.addEventListener('click', async e => {
+      const uid = e.currentTarget.dataset.uid;
+      await updateUserRole(uid, 'admin');
+      await refreshUsersListIfVisible();
+    });
+  });
+  container.querySelectorAll('.demoteBtn').forEach(b => {
+    b.addEventListener('click', async e => {
+      const uid = e.currentTarget.dataset.uid;
+      await updateUserRole(uid, 'member');
+      await refreshUsersListIfVisible();
+    });
+  });
+  container.querySelectorAll('.deleteBtn').forEach(b => {
+    b.addEventListener('click', async e => {
+      const uid = e.currentTarget.dataset.uid;
+      if (!confirm(`Delete users/${uid} document? This cannot be undone from the client.`)) return;
+      await deleteUserDoc(uid);
+      await refreshUsersListIfVisible();
+    });
+  });
+}
+
+/* -------------------------
+   Initialize on load
+   ------------------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  showAdminPanel(false);
+  showStatus('Initializing admin console...', 'info');
+  waitForAuthAndInit().catch(err => {
+    console.error('Initialization error', err);
+    showStatus('Initialization failed: ' + (err.message || err), 'error');
+  });
+});
+
 </script>
 </body>
 </html>
