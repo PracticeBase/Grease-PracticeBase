@@ -14,7 +14,7 @@ import {
   query,
   orderBy,
   limit
-} from "/PracticeBase/firebase.js";
+} from "./firebase.js";
 
 const $ = id => document.getElementById(id);
 const status = (msg, type="info") => {
