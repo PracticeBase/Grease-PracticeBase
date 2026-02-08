@@ -6,17 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="stylesheet" href="app.css" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
 
-  <!-- SPLASH SCREEN -->
+  <!-- SPLASH -->
   <div id="splashScreen" class="splash">
     <h1 class="splash-logo">PracticeBase</h1>
   </div>
 
-  <!-- LOGIN SCREEN -->
+  <!-- LOGIN -->
   <div id="loginScreen" class="screen hidden">
     <h2>Login</h2>
 
@@ -51,55 +53,96 @@
     <button id="skipBioBtn" class="btn outline">Skip for now</button>
   </div>
 
-  <!-- HOME SCREEN -->
+  <!-- HOME / DASHBOARD -->
   <div id="homeScreen" class="screen hidden">
-    <h2>Welcome, Cast Member</h2>
+    <header class="top-bar">
+      <div>
+        <h2>Dashboard</h2>
+        <p id="welcomeText" class="muted"></p>
+      </div>
+      <button id="themeToggle" class="icon-btn">
+        <i data-lucide="moon"></i>
+      </button>
+    </header>
 
-    <div class="card">
-      <h3>Next Rehearsal</h3>
-      <p id="nextRehearsal">Loading…</p>
-    </div>
+    <div class="card-grid">
+      <div class="card">
+        <h3>Next Rehearsal</h3>
+        <p id="nextRehearsal">Loading…</p>
+        <p id="nextRehearsalTime" class="muted small"></p>
+      </div>
 
-    <div class="card">
-      <h3>Latest Announcement</h3>
-      <p id="latestAnnouncement">Loading…</p>
+      <div class="card">
+        <h3>Countdown</h3>
+        <div class="ring-wrapper">
+          <div class="ring" id="countdownRing">
+            <div class="ring-inner">
+              <span id="countdownText">--</span>
+            </div>
+          </div>
+        </div>
+        <p class="muted small">Days until next rehearsal</p>
+      </div>
+
+      <div class="card">
+        <h3>Your Progress</h3>
+        <div class="ring-wrapper">
+          <div class="ring ring-secondary" id="progressRing">
+            <div class="ring-inner">
+              <span id="progressText">0%</span>
+            </div>
+          </div>
+        </div>
+        <p class="muted small">Practice completion</p>
+      </div>
+
+      <div class="card">
+        <h3>Latest Announcement</h3>
+        <p id="latestAnnouncement">Loading…</p>
+      </div>
     </div>
   </div>
 
-  <!-- SCHEDULE SCREEN -->
+  <!-- SCHEDULE -->
   <div id="scheduleScreen" class="screen hidden">
-    <h2>Schedule</h2>
-    <div id="scheduleList">Loading…</div>
+    <header class="top-bar">
+      <h2>Schedule</h2>
+    </header>
+    <div id="scheduleList" class="list">Loading…</div>
   </div>
 
-  <!-- MEDIA SCREEN -->
+  <!-- MEDIA -->
   <div id="mediaScreen" class="screen hidden">
-    <h2>Media</h2>
-    <div id="mediaList">Loading…</div>
+    <header class="top-bar">
+      <h2>Media</h2>
+    </header>
+    <div id="mediaList" class="list">Loading…</div>
   </div>
 
-  <!-- PROFILE SCREEN -->
+  <!-- PROFILE -->
   <div id="profileScreen" class="screen hidden">
-    <h2>Your Profile</h2>
+    <header class="top-bar">
+      <h2>Profile</h2>
+    </header>
     <p id="profileEmail"></p>
     <button id="logoutBtn" class="btn outline">Sign Out</button>
   </div>
 
   <!-- BOTTOM NAV -->
   <div id="bottomNav" class="bottom-nav hidden">
-    <div class="nav-btn" data-target="homeScreen">
+    <div class="nav-btn active" data-target="homeScreen" data-index="0">
       <i data-lucide="home"></i>
       <span>Home</span>
     </div>
-    <div class="nav-btn" data-target="scheduleScreen">
+    <div class="nav-btn" data-target="scheduleScreen" data-index="1">
       <i data-lucide="calendar"></i>
       <span>Schedule</span>
     </div>
-    <div class="nav-btn" data-target="mediaScreen">
+    <div class="nav-btn" data-target="mediaScreen" data-index="2">
       <i data-lucide="music"></i>
       <span>Media</span>
     </div>
-    <div class="nav-btn" data-target="profileScreen">
+    <div class="nav-btn" data-target="profileScreen" data-index="3">
       <i data-lucide="user"></i>
       <span>Profile</span>
     </div>
@@ -109,6 +152,5 @@
 
   <script type="module" src="app.js"></script>
   <script> lucide.createIcons(); </script>
-
 </body>
 </html>
