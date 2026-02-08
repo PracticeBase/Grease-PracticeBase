@@ -50,6 +50,49 @@ body{
 @keyframes fadeIn{to{opacity:1}}
 @keyframes splashFade{0%{opacity:1}100%{opacity:0;visibility:hidden}}
 
+/* FULLSCREEN INSTALL MODAL */
+.install-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:30;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.35s ease;
+}
+.install-modal.active{
+  opacity:1;
+  pointer-events:auto;
+}
+.install-card{
+  background:var(--card);
+  padding:24px;
+  border-radius:var(--radius);
+  width:90%;
+  max-width:360px;
+  text-align:center;
+  box-shadow:0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* SETUP CENTERING */
+.setup-center{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.setup-card{
+  background:var(--card);
+  padding:24px;
+  border-radius:var(--radius);
+  width:90%;
+  max-width:360px;
+  text-align:center;
+  box-shadow:0 8px 20px rgba(0,0,0,0.1);
+}
+
 /* SCREENS */
 .screen{
   position:absolute;
@@ -145,6 +188,19 @@ body{
   border:2px solid var(--accent);
 }
 
+/* MEDIA BUTTONS */
+.media-btn{
+  margin-top:8px;
+  padding:10px;
+  border-radius:var(--pill);
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  font-size:0.9rem;
+  cursor:pointer;
+  width:100%;
+}
+
 /* LISTS */
 .list{
   display:flex;
@@ -237,34 +293,4 @@ body{
   font-size:0.9rem;
   text-align:center;
   z-index:5;
-}
-
-/* INSTALL BANNER */
-.install-banner{
-  position:fixed;
-  bottom:80px;
-  left:0;
-  right:0;
-  background:var(--card);
-  border-top:1px solid var(--border);
-  padding:12px 16px;
-  box-shadow:0 -4px 10px rgba(0,0,0,0.1);
-  z-index:6;
-  animation:slideUp 0.4s ease forwards;
-}
-.install-content{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.btn.small{
-  width:auto;
-  padding:6px 12px;
-  font-size:0.85rem;
-}
-
-/* SLIDE UP */
-@keyframes slideUp{
-  from{transform:translateY(100%);}
-  to{transform:translateY(0);}
 }

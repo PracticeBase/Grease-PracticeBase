@@ -18,6 +18,16 @@
     <h1 class="splash-logo">PracticeBase</h1>
   </div>
 
+  <!-- FULLSCREEN INSTALL PROMPT -->
+  <div id="installModal" class="install-modal hidden">
+    <div class="install-card">
+      <h2>Install PracticeBase</h2>
+      <p>Install the app for faster access and a better mobile experience.</p>
+      <button id="installModalBtn" class="btn">Install App</button>
+      <button id="installModalSkip" class="btn outline">Skip for now</button>
+    </div>
+  </div>
+
   <!-- LOGIN -->
   <div id="loginScreen" class="screen hidden">
     <h2>Login</h2>
@@ -42,15 +52,17 @@
   </div>
 
   <!-- BIOMETRIC SETUP -->
-  <div id="setupScreen" class="screen hidden">
-    <h2>Enable Biometric Login</h2>
-    <p>Use Face ID / Touch ID to log in faster on this device.</p>
+  <div id="setupScreen" class="screen setup-center hidden">
+    <div class="setup-card">
+      <h2>Enable Biometric Login</h2>
+      <p>Use Face ID / Touch ID to log in faster on this device.</p>
 
-    <button id="enableBioBtn" class="btn">
-      <i data-lucide="fingerprint"></i> Enable Biometrics
-    </button>
+      <button id="enableBioBtn" class="btn">
+        <i data-lucide="fingerprint"></i> Enable Biometrics
+      </button>
 
-    <button id="skipBioBtn" class="btn outline">Skip for now</button>
+      <button id="skipBioBtn" class="btn outline">Skip for now</button>
+    </div>
   </div>
 
   <!-- HOME / DASHBOARD -->
@@ -85,15 +97,21 @@
       </div>
 
       <div class="card">
-        <h3>Your Progress</h3>
+        <h3>Your Practice Today</h3>
         <div class="ring-wrapper">
           <div class="ring ring-secondary" id="progressRing">
             <div class="ring-inner">
-              <span id="progressText">0%</span>
+              <span id="progressText">0/60 min</span>
             </div>
           </div>
         </div>
-        <p class="muted small">Practice completion</p>
+        <p class="muted small">Minutes practiced today</p>
+      </div>
+
+      <div class="card">
+        <h3>Weekly Streak</h3>
+        <p id="streakText">0 days</p>
+        <p class="muted small">Consecutive days you hit your goal</p>
       </div>
 
       <div class="card">
@@ -119,12 +137,29 @@
     <div id="mediaList" class="list">Loading…</div>
   </div>
 
-  <!-- PROFILE -->
+  <!-- PROFILE / SETTINGS -->
   <div id="profileScreen" class="screen hidden">
     <header class="top-bar">
-      <h2>Profile</h2>
+      <h2>Profile & Settings</h2>
     </header>
+
     <p id="profileEmail"></p>
+
+    <div class="card">
+      <h3>Practice Goal</h3>
+      <div class="field">
+        <label>Daily Practice Goal (minutes)</label>
+        <input id="practiceGoalInput" type="number" min="1" value="60">
+      </div>
+      <button id="savePracticeGoal" class="btn">Save Goal</button>
+    </div>
+
+    <div class="card">
+      <h3>Practice Reminders</h3>
+      <p class="muted small">Enable notifications to get “Time to practice!” reminders.</p>
+      <button id="enableNotifications" class="btn outline">Enable Notifications</button>
+    </div>
+
     <button id="logoutBtn" class="btn outline">Sign Out</button>
   </div>
 
