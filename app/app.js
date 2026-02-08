@@ -21,7 +21,8 @@ const screens = {
   homeScreen: $("homeScreen"),
   scheduleScreen: $("scheduleScreen"),
   mediaScreen: $("mediaScreen"),
-  profileScreen: $("profileScreen")
+  profileScreen: $("profileScreen"),
+  bioAutoScreen: $("bioAutoScreen")
 };
 
 let currentScreen = "loginScreen";
@@ -39,11 +40,20 @@ let practiceTimer = null;
 let reminderTimer = null;
 let deferredPrompt = null;
 
+/* HELPERS */
+function isMobile(){
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+function isStandalone(){
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+}
+
 /* SHOW WITH ANIMATION + NAV VISIBILITY */
 function show(screenName) {
   currentScreen = screenName;
 
   Object.entries(screens).forEach(([name, el]) => {
+    if (!el) return;
     if (name === screenName) {
       el.classList.remove("hidden");
       requestAnimationFrame(() => el.classList.add("active"));
@@ -53,7 +63,7 @@ function show(screenName) {
     }
   });
 
-  const hideNavScreens = ["loginScreen", "setupScreen"];
+  const hideNavScreens = ["loginScreen", "setupScreen", "bioAutoScreen"];
   if (hideNavScreens.includes(screenName)) {
     $("bottomNav").classList.add("hidden");
   } else {
@@ -69,6 +79,9 @@ function hasBiometric(){
 }
 function saveBiometric(id){
   localStorage.setItem(DEVICE_KEY, id);
+}
+function shouldAutoBiometric() {
+  return hasBiometric() && isMobile() && !isStandalone();
 }
 
 /* THEME */
@@ -113,7 +126,7 @@ $("loginForm").onsubmit = async e => {
   }
 };
 
-/* BIOMETRIC LOGIN */
+/* BIOMETRIC LOGIN (MANUAL BUTTON) */
 $("bioLoginBtn").onclick = async () => {
   status("Authenticating…");
 
@@ -124,7 +137,10 @@ $("bioLoginBtn").onclick = async () => {
     await navigator.credentials.get({
       publicKey: {
         challenge: new Uint8Array(32),
-        allowCredentials: [{ id: Uint8Array.from(atob(id), c => c.charCodeAt(0)), type: "public-key" }]
+        allowCredentials: [
+          { id: Uint8Array.from(atob(id), c => c.charCodeAt(0)), type: "public-key" }
+        ],
+        userVerification: "required"
       }
     });
 
@@ -136,6 +152,37 @@ $("bioLoginBtn").onclick = async () => {
     status("Biometric login failed.");
   }
 };
+
+/* AUTO BIOMETRIC SCREEN */
+async function triggerAutoBiometric() {
+  const id = localStorage.getItem(DEVICE_KEY);
+  if (!id) return show("loginScreen");
+
+  status("Confirming your identity…");
+
+  try {
+    await navigator.credentials.get({
+      publicKey: {
+        challenge: new Uint8Array(32),
+        allowCredentials: [
+          { id: Uint8Array.from(atob(id), c => c.charCodeAt(0)), type: "public-key" }
+        ],
+        userVerification: "required"
+      }
+    });
+
+    await loadHome();
+    show("homeScreen");
+    setActiveNav(0);
+    status("Logged in with biometrics.");
+  } catch {
+    show("loginScreen");
+    status("Biometric login cancelled.");
+  }
+}
+
+$("bioAutoBtn")?.addEventListener("click", triggerAutoBiometric);
+$("bioAutoSkip")?.addEventListener("click", () => show("loginScreen"));
 
 /* ENABLE BIOMETRICS */
 $("enableBioBtn").onclick = async () => {
@@ -203,7 +250,6 @@ async function loadHome(){
     updateCountdown(s.date);
   }
 
-  // Practice goal input
   const goal = parseInt(localStorage.getItem(PRACTICE_GOAL_KEY) || "60", 10);
   $("practiceGoalInput").value = goal;
 
@@ -300,14 +346,12 @@ function updateStreak(minutesToday, goal){
   const today = new Date().toDateString();
   let streakDays = getStreakArray();
 
-  // Ensure today is in list if goal met
   if (minutesToday >= goal) {
     if (!streakDays.includes(today)) {
       streakDays.push(today);
     }
   }
 
-  // Keep only last 7 days
   streakDays = streakDays.slice(-7);
   saveStreakArray(streakDays);
   updateStreakDisplay();
@@ -316,7 +360,6 @@ function updateStreakDisplay(){
   const streakDays = getStreakArray();
   const today = new Date().toDateString();
 
-  // Compute consecutive days ending today
   let streak = 0;
   for (let i = 0; i < 7; i++) {
     const d = new Date();
@@ -485,13 +528,6 @@ $("savePracticeGoal").onclick = () => {
 };
 
 /* NOTIFICATIONS / REMINDERS */
-function isMobile(){
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-}
-function isStandalone(){
-  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-}
-
 $("enableNotifications").onclick = async () => {
   if (!("Notification" in window)) {
     status("Notifications not supported on this device.");
@@ -523,7 +559,7 @@ function startReminderTimer(){
         tag: "practice-reminder"
       });
     }
-  }, 60 * 60 * 1000); // every hour
+  }, 60 * 60 * 1000);
 }
 
 /* INSTALL PROMPT (FULLSCREEN, MOBILE ONLY, UNTIL INSTALLED) */
@@ -532,7 +568,7 @@ function maybeShowInstallModal(){
   if (isStandalone()) return;
   if (!deferredPrompt) return;
 
-  if (currentScreen === "loginScreen" || currentScreen === "setupScreen") {
+  if (currentScreen === "loginScreen" || currentScreen === "setupScreen" || currentScreen === "bioAutoScreen") {
     $("installModal").classList.add("active");
   } else {
     $("installModal").classList.remove("active");
@@ -576,14 +612,20 @@ onAuthStateChanged(auth, user => {
     if (hasBiometric()) $("bioLoginBtn").classList.remove("hidden");
     startPracticeTimer();
     if (localStorage.getItem(NOTIF_ENABLED_KEY) === "1") startReminderTimer();
-    show("loginScreen");
+    // After auth state, we still let splash logic decide first screen
   } else {
     show("loginScreen");
   }
 });
 
-/* SPLASH → LOGIN */
+/* SPLASH → AUTO BIOMETRIC OR LOGIN */
 setTimeout(() => {
   $("splashScreen").style.display = "none";
-  show("loginScreen");
+
+  if (shouldAutoBiometric()) {
+    show("bioAutoScreen");
+    triggerAutoBiometric();
+  } else {
+    show("loginScreen");
+  }
 }, 1400);
