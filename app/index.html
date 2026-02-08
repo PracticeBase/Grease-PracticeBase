@@ -11,53 +11,98 @@
 
 <body>
 
-  <div class="container">
+  <!-- SPLASH SCREEN -->
+  <div id="splashScreen" class="splash">
+    <h1 class="splash-logo">PracticeBase</h1>
+  </div>
 
-    <h1 class="logo">PracticeBase</h1>
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="screen hidden">
+    <h2>Login</h2>
 
-    <!-- LOGIN FORM -->
-    <div id="loginScreen">
-      <h2>Login</h2>
+    <form id="loginForm">
+      <div class="field">
+        <label>Email</label>
+        <input id="email" type="email" required>
+      </div>
 
-      <form id="loginForm">
-        <div class="field">
-          <label>Email</label>
-          <input id="email" type="email" required>
-        </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="password" type="password" required>
+      </div>
 
-        <div class="field">
-          <label>Password</label>
-          <input id="password" type="password" required>
-        </div>
+      <button class="btn" type="submit">Login</button>
+    </form>
 
-        <button class="btn" type="submit">Login</button>
-      </form>
+    <button id="bioLoginBtn" class="btn outline hidden">
+      <i data-lucide="fingerprint"></i> Login with Biometrics
+    </button>
+  </div>
 
-      <button id="bioLoginBtn" class="btn outline" style="display:none;">
-        <i data-lucide="fingerprint"></i> Login with Biometrics
-      </button>
+  <!-- BIOMETRIC SETUP -->
+  <div id="setupScreen" class="screen hidden">
+    <h2>Enable Biometric Login</h2>
+    <p>Use Face ID / Touch ID to log in faster on this device.</p>
+
+    <button id="enableBioBtn" class="btn">
+      <i data-lucide="fingerprint"></i> Enable Biometrics
+    </button>
+
+    <button id="skipBioBtn" class="btn outline">Skip for now</button>
+  </div>
+
+  <!-- HOME SCREEN -->
+  <div id="homeScreen" class="screen hidden">
+    <h2>Welcome, Cast Member</h2>
+
+    <div class="card">
+      <h3>Next Rehearsal</h3>
+      <p id="nextRehearsal">Loading…</p>
     </div>
 
-    <!-- BIOMETRIC SETUP -->
-    <div id="setupScreen" style="display:none;">
-      <h2>Enable Biometric Login</h2>
-      <p>Use Face ID / Touch ID / device biometrics to log in faster on this device.</p>
-
-      <button id="enableBioBtn" class="btn">
-        <i data-lucide="fingerprint"></i> Enable Biometrics
-      </button>
-
-      <button id="skipBioBtn" class="btn outline">Skip for now</button>
+    <div class="card">
+      <h3>Latest Announcement</h3>
+      <p id="latestAnnouncement">Loading…</p>
     </div>
+  </div>
 
-    <!-- HOME SCREEN -->
-    <div id="homeScreen" style="display:none;">
-      <h2>Welcome!</h2>
-      <p>You are logged in.</p>
+  <!-- SCHEDULE SCREEN -->
+  <div id="scheduleScreen" class="screen hidden">
+    <h2>Schedule</h2>
+    <div id="scheduleList">Loading…</div>
+  </div>
 
-      <button id="logoutBtn" class="btn outline">Sign Out</button>
+  <!-- MEDIA SCREEN -->
+  <div id="mediaScreen" class="screen hidden">
+    <h2>Media</h2>
+    <div id="mediaList">Loading…</div>
+  </div>
+
+  <!-- PROFILE SCREEN -->
+  <div id="profileScreen" class="screen hidden">
+    <h2>Your Profile</h2>
+    <p id="profileEmail"></p>
+    <button id="logoutBtn" class="btn outline">Sign Out</button>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottomNav" class="bottom-nav hidden">
+    <div class="nav-btn" data-target="homeScreen">
+      <i data-lucide="home"></i>
+      <span>Home</span>
     </div>
-
+    <div class="nav-btn" data-target="scheduleScreen">
+      <i data-lucide="calendar"></i>
+      <span>Schedule</span>
+    </div>
+    <div class="nav-btn" data-target="mediaScreen">
+      <i data-lucide="music"></i>
+      <span>Media</span>
+    </div>
+    <div class="nav-btn" data-target="profileScreen">
+      <i data-lucide="user"></i>
+      <span>Profile</span>
+    </div>
   </div>
 
   <div id="status" class="status-bar"></div>

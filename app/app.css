@@ -16,35 +16,49 @@ body{
   margin:0;
   background:var(--bg);
   font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  height:100vh;
+  overflow:hidden;
+}
+
+/* SPLASH */
+.splash{
+  position:fixed;
+  inset:0;
+  background:var(--bg);
   display:flex;
   justify-content:center;
   align-items:center;
-  height:100vh;
+  animation:fadeOut 1.2s ease forwards;
+  animation-delay:1.2s;
+}
+.splash-logo{
+  font-size:2rem;
+  font-weight:700;
+  opacity:0;
+  animation:fadeIn 1s ease forwards;
+}
+@keyframes fadeIn{to{opacity:1}}
+@keyframes fadeOut{to{opacity:0; visibility:hidden}}
+
+/* SCREENS */
+.screen{
   padding:20px;
+  height:100vh;
+  overflow:auto;
 }
+.hidden{display:none}
 
-.container{
-  width:100%;
-  max-width:420px;
+/* CARDS */
+.card{
   background:var(--card);
-  padding:24px;
+  padding:16px;
   border-radius:var(--radius);
-  box-shadow:0 8px 20px rgba(0,0,0,0.08);
-}
-
-.logo{
-  text-align:center;
-  font-size:1.8rem;
-  margin-bottom:20px;
-}
-
-h2{
-  margin-top:0;
-}
-
-.field{
   margin-bottom:16px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.05);
 }
+
+/* FORMS */
+.field{margin-bottom:16px}
 .field label{
   display:block;
   font-size:0.85rem;
@@ -59,6 +73,7 @@ h2{
   font-size:1rem;
 }
 
+/* BUTTONS */
 .btn{
   width:100%;
   padding:12px;
@@ -77,11 +92,38 @@ h2{
   border:2px solid #000;
 }
 
+/* BOTTOM NAV */
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:70px;
+  background:#fff;
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+.nav-btn{
+  text-align:center;
+  font-size:0.8rem;
+  color:var(--muted);
+}
+.nav-btn.active{
+  color:var(--accent);
+}
+.nav-btn i{
+  display:block;
+  margin:auto;
+}
+
+/* STATUS BAR */
 .status-bar{
   position:fixed;
   left:0;
   right:0;
-  bottom:0;
+  bottom:70px;
   padding:10px 16px;
   background:#111;
   color:#fff;

@@ -1,9 +1,15 @@
 import {
   auth,
+  db,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  signOut
-} from "../firebase.js";
+  signOut,
+  collection,
+  query,
+  orderBy,
+  limit,
+  getDocs
+} from "/PracticeBase/firebase.js";
 
 const $ = id => document.getElementById(id);
 const status = msg => $("status").textContent = msg;
@@ -11,35 +17,34 @@ const status = msg => $("status").textContent = msg;
 /* ---------------------------
    SCREENS
 ---------------------------- */
-const loginScreen = $("loginScreen");
-const setupScreen = $("setupScreen");
-const homeScreen = $("homeScreen");
+const screens = {
+  loginScreen: $("loginScreen"),
+  setupScreen: $("setupScreen"),
+  homeScreen: $("homeScreen"),
+  scheduleScreen: $("scheduleScreen"),
+  mediaScreen: $("mediaScreen"),
+  profileScreen: $("profileScreen")
+};
 
-function show(screen){
-  loginScreen.style.display = "none";
-  setupScreen.style.display = "none";
-  homeScreen.style.display = "none";
-  screen.style.display = "block";
+function show(screenName){
+  Object.values(screens).forEach(s => s.classList.add("hidden"));
+  screens[screenName].classList.remove("hidden");
 }
 
 /* ---------------------------
    BIOMETRIC STORAGE
 ---------------------------- */
-
 const DEVICE_KEY = "pb_bio_key";
 
-/* Check if biometrics are set up */
 function hasBiometric(){
   return localStorage.getItem(DEVICE_KEY) !== null;
 }
-
-/* Save credential ID */
 function saveBiometric(id){
   localStorage.setItem(DEVICE_KEY, id);
 }
 
 /* ---------------------------
-   LOGIN FLOW
+   LOGIN
 ---------------------------- */
 
 $("loginForm").onsubmit = async e => {
@@ -53,9 +58,11 @@ $("loginForm").onsubmit = async e => {
     await signInWithEmailAndPassword(auth, email, password);
 
     if (!hasBiometric()) {
-      show(setupScreen);
+      show("setupScreen");
     } else {
-      show(homeScreen);
+      loadHome();
+      show("homeScreen");
+      $("bottomNav").classList.remove("hidden");
     }
 
     status("Logged in.");
@@ -75,17 +82,18 @@ $("bioLoginBtn").onclick = async () => {
     const id = localStorage.getItem(DEVICE_KEY);
     if (!id) return status("No biometric key found.");
 
-    const assertion = await navigator.credentials.get({
+    await navigator.credentials.get({
       publicKey: {
         challenge: new Uint8Array(32),
         allowCredentials: [{ id: Uint8Array.from(atob(id), c => c.charCodeAt(0)), type: "public-key" }]
       }
     });
 
-    // If we reach here, biometrics succeeded
-    show(homeScreen);
+    loadHome();
+    show("homeScreen");
+    $("bottomNav").classList.remove("hidden");
     status("Biometric login successful.");
-  } catch (err) {
+  } catch {
     status("Biometric login failed.");
   }
 };
@@ -115,17 +123,56 @@ $("enableBioBtn").onclick = async () => {
     const id = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
     saveBiometric(id);
 
+    loadHome();
+    show("homeScreen");
+    $("bottomNav").classList.remove("hidden");
     status("Biometrics enabled.");
-    show(homeScreen);
-
-  } catch (err) {
+  } catch {
     status("Biometric setup failed.");
   }
 };
 
 $("skipBioBtn").onclick = () => {
-  show(homeScreen);
+  loadHome();
+  show("homeScreen");
+  $("bottomNav").classList.remove("hidden");
 };
+
+/* ---------------------------
+   LOAD HOME DATA
+---------------------------- */
+
+async function loadHome(){
+  $("profileEmail").textContent = auth.currentUser.email;
+
+  // Latest announcement
+  const annQ = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(1));
+  const annSnap = await getDocs(annQ);
+  $("latestAnnouncement").textContent = annSnap.empty
+    ? "No announcements yet."
+    : annSnap.docs[0].data().message;
+
+  // Next rehearsal
+  const schQ = query(collection(db, "schedule"), orderBy("sortTimestamp", "asc"), limit(1));
+  const schSnap = await getDocs(schQ);
+  $("nextRehearsal").textContent = schSnap.empty
+    ? "No rehearsals scheduled."
+    : `${schSnap.docs[0].data().title} — ${schSnap.docs[0].data().date}`;
+}
+
+/* ---------------------------
+   BOTTOM NAV
+---------------------------- */
+
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    const target = btn.dataset.target;
+    show(target);
+  };
+});
 
 /* ---------------------------
    SIGN OUT
@@ -133,7 +180,8 @@ $("skipBioBtn").onclick = () => {
 
 $("logoutBtn").onclick = async () => {
   await signOut(auth);
-  show(loginScreen);
+  show("loginScreen");
+  $("bottomNav").classList.add("hidden");
   status("Signed out.");
 };
 
@@ -143,11 +191,9 @@ $("logoutBtn").onclick = async () => {
 
 onAuthStateChanged(auth, user => {
   if (user) {
-    if (hasBiometric()) {
-      $("bioLoginBtn").style.display = "block";
-    }
-    show(loginScreen);
+    if (hasBiometric()) $("bioLoginBtn").classList.remove("hidden");
+    show("loginScreen");
   } else {
-    show(loginScreen);
+    show("loginScreen");
   }
 });
