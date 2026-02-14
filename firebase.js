@@ -31,13 +31,13 @@ import {
    Replace the values below with your Firebase project's config.
 */
 const firebaseConfig = {
-  apiKey: "AIzaSyBId5CDuFdsSHYP2Hip3bwkBsyut1f_0fI",
-  authDomain: "practicebase-8762h8b2.firebaseapp.com",
-  projectId: "practicebase-8762h8b2",
-  storageBucket: "practicebase-8762h8b2.firebasestorage.app",
-  messagingSenderId: "214656580811",
-  appId: "1:214656580811:web:0d113c9305729ae9c9ef4e",
-  measurementId: "G-FZ2JEGH91H"
+  apiKey: "AIzaSyAecPf2aXR0j1buuDmz9MVrS8aYINs1eCU",
+  authDomain: "grease-practicebase.firebaseapp.com",
+  projectId: "grease-practicebase",
+  storageBucket: "grease-practicebase.firebasestorage.app",
+  messagingSenderId: "696484090016",
+  appId: "1:696484090016:web:4d7bfe336d842ed946b9c5",
+  measurementId: "G-4C78RPXQ99"
 };
 
 /* Initialize */
@@ -73,3 +73,4 @@ export {
   getDocs,
   limit
 };
+
