@@ -15,7 +15,7 @@ import {
   query,
   orderBy,
   limit
-} from "/PracticeBase/firebase.js";
+} from "/Grease-PracticeBase/firebase.js";
 
 const $ = id => document.getElementById(id);
 const status = (msg, type="info") => {
@@ -529,3 +529,4 @@ function setupSignOut() {
 ---------------------------- */
 
 init().catch(err => status(err.message, "error"));
+
