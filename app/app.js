@@ -11,6 +11,47 @@ import {
   getDocs
 } from "/Grease-PracticeBase/firebase.js";
 
+import { toast, notifyDevice } from "/Grease-PracticeBase/app/notif.js";
+
+/* REALTIME ANNOUNCEMENT LISTENER */
+import { collection, query, orderBy, limit, onSnapshot } from "../firebase.js";
+
+let lastAnnouncementId = null;
+
+function listenForAnnouncements() {
+  const q = query(
+    collection(db, "announcements"),
+    orderBy("createdAt", "desc"),
+    limit(1)
+  );
+
+  onSnapshot(q, (snapshot) => {
+    if (snapshot.empty) return;
+
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+
+    // First load: store ID but don't notify
+    if (!lastAnnouncementId) {
+      lastAnnouncementId = doc.id;
+      return;
+    }
+
+    // If new announcement
+    if (doc.id !== lastAnnouncementId) {
+      lastAnnouncementId = doc.id;
+
+      // Toast
+      toast(`New announcement: ${data.title}`, "info");
+
+      // Device notification
+      notifyDevice(data.title, data.message || "");
+    }
+  });
+}
+
+
+
 /* DOM HELPERS */
 const $ = id => document.getElementById(id);
 const status = msg => {

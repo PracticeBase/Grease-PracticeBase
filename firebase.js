@@ -1,35 +1,46 @@
-// firebase.js
-// Replace firebaseConfig with your project's credentials.
+// firebase.js — Modular Firebase v9+ setup
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  serverTimestamp,
-  doc,
-  setDoc,
-  getDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  where,
-  deleteDoc,
-  updateDoc,
-  getDocs,
-  limit
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+// ------------------------------
+// IMPORTS
+// ------------------------------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
 import {
   getAuth,
   onAuthStateChanged,
-  signOut,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* ====== CONFIGURE THIS ======
-   Replace the values below with your Firebase project's config.
-*/
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  addDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+import {
+  getStorage,
+  ref,
+  getDownloadURL,
+  listAll
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+
+// ------------------------------
+// CONFIG
+// ------------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyAecPf2aXR0j1buuDmz9MVrS8aYINs1eCU",
   authDomain: "grease-practicebase.firebaseapp.com",
@@ -40,37 +51,43 @@ const firebaseConfig = {
   measurementId: "G-4C78RPXQ99"
 };
 
-/* Initialize */
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// ------------------------------
+// INIT
+// ------------------------------
+export const app = initializeApp(firebaseConfig);
 
-/* Re-export commonly used Firestore helpers and Auth helpers */
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+
+
+// ------------------------------
+// EXPORTS FOR APP.JS
+// ------------------------------
 export {
-  app,
-  db,
-  auth,
-
-  // Auth helpers
+  // Auth
   onAuthStateChanged,
-  signOut,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
+  signOut,
 
-  // Firestore functions
+  // Firestore
   collection,
-  addDoc,
-  serverTimestamp,
   doc,
-  setDoc,
   getDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  where,
-  deleteDoc,
-  updateDoc,
   getDocs,
-  limit
-};
+  setDoc,
+  updateDoc,
+  addDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  serverTimestamp,
 
+  // Storage
+  ref,
+  getDownloadURL,
+  listAll
+};
