@@ -389,4 +389,5 @@ body.dark .glass-card {
   margin-bottom: 16px;
   font-size: 1.4rem;
   font-weight: 700;
+  color:var(--text);
 }
