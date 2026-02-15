@@ -70,28 +70,42 @@ body{
 /* --------------------------------------------------
    LOGIN SCREEN CENTERING
 -------------------------------------------------- */
-.login-center{
-  display:flex;
-  justify-content:center;
-  align-items:center;
+/* LOGIN SCREEN CENTERING */
+.login-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;        /* ensures true vertical centering */
+  padding: var(--space-4);
+  box-sizing: border-box;
 }
 
-.login-card{
-  width:90%;
-  max-width:360px;
-  background:var(--card);
-  padding:var(--space-4);
-  border-radius:var(--radius-lg);
-  box-shadow:var(--shadow);
-  border:1px solid var(--border);
-  text-align:center;
+/* LOGIN CARD */
+.login-card {
+  width: 100%;
+  max-width: 360px;     /* prevents it from becoming too wide */
+  background: var(--card);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  text-align: center;
 }
 
-.login-title{
-  margin-bottom:var(--space-4);
-  font-size:1.4rem;
-  font-weight:700;
+/* LOGIN TITLE */
+.login-title {
+  margin-bottom: var(--space-4);
+  font-size: 1.4rem;
+  font-weight: 700;
 }
+
+/* FIX INPUT WIDTH */
+.login-card .field input {
+  width: 100%;
+  max-width: 100%;      /* prevents overflow */
+  box-sizing: border-box;
+}
+
 
 /* --------------------------------------------------
    TOP BAR
