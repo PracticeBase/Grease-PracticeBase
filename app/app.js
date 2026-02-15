@@ -739,8 +739,10 @@ onAuthStateChanged(auth, (user) => {
 
 /* SPLASH → INITIAL FLOW */
 setTimeout(() => {
-  const splash = $("splashScreen");
-  if (splash) splash.style.display = "none";
+  const splash = document.getElementById("splashScreen");
+  if (splash) {
+    splash.style.display = "none";
+  }
 
   if (shouldAutoBiometric()) {
     show("bioAutoScreen");
@@ -751,6 +753,7 @@ setTimeout(() => {
     show("loginScreen");
   }
 }, 1400);
+
 
 /* INITIAL TIMERS IF ALREADY SIGNED IN */
 if (auth.currentUser) {
