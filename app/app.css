@@ -59,15 +59,15 @@ body{
   padding:var(--space-4);
   padding-bottom:calc(120px + env(safe-area-inset-bottom));
   overflow-y:auto;
-  opacity:0;
-  transform:translateX(20px);
-  transition:opacity .3s ease,transform .3s ease;
+  /* visible by default */
+  opacity:1;
+  transform:none;
 }
 
-.screen.active{
-  opacity:1;
-  transform:translateX(0);
+.screen.hidden{
+  display:none;
 }
+
 
 /* --------------------------------------------------
    TOP BAR
