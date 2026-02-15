@@ -736,7 +736,7 @@ onAuthStateChanged(auth, (user) => {
     }
   }
 });
-
+//Fixes
 setTimeout(() => {
   const splash = document.getElementById("splashScreen");
   if (splash) {
