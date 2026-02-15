@@ -370,3 +370,23 @@ body.dark .glass-card {
   pointer-events:none;
   transition:opacity 0.25s ease;
 }
+/* LOGIN CENTERING */
+.login-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* LOGIN CARD */
+.login-card {
+  width: 90%;
+  max-width: 360px;
+  padding: 24px;
+  text-align: center;
+}
+
+.login-title {
+  margin-bottom: 16px;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
