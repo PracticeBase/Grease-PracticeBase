@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="stylesheet" href="app.css" />
-  <link rel="manifest" href="/PracticeBase/manifest.json">
+  <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#000000">
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -25,6 +25,20 @@
       <p>Install the app for faster access and a better mobile experience.</p>
       <button id="installModalBtn" class="btn">Install App</button>
       <button id="installModalSkip" class="btn outline">Skip for now</button>
+    </div>
+  </div>
+
+  <!-- AUTO BIOMETRIC LOGIN -->
+  <div id="bioAutoScreen" class="screen setup-center hidden">
+    <div class="setup-card">
+      <h2>Confirm Your Identity</h2>
+      <p>Use Face ID / Touch ID to continue.</p>
+
+      <button id="bioAutoBtn" class="btn">
+        <i data-lucide="fingerprint"></i> Continue with Biometrics
+      </button>
+
+      <button id="bioAutoSkip" class="btn outline">Use Password Instead</button>
     </div>
   </div>
 
@@ -51,21 +65,6 @@
     </button>
   </div>
 
-<!-- BIOMETRIC AUTO LOGIN SCREEN -->
-<div id="bioAutoScreen" class="screen setup-center hidden">
-  <div class="setup-card">
-    <h2>Confirm Your Identity</h2>
-    <p>Use Face ID / Touch ID to continue.</p>
-
-    <button id="bioAutoBtn" class="btn">
-      <i data-lucide="fingerprint"></i> Continue with Biometrics
-    </button>
-
-    <button id="bioAutoSkip" class="btn outline">Use Password Instead</button>
-  </div>
-</div>
-
-
   <!-- BIOMETRIC SETUP -->
   <div id="setupScreen" class="screen setup-center hidden">
     <div class="setup-card">
@@ -82,9 +81,10 @@
 
   <!-- HOME / DASHBOARD -->
   <div id="homeScreen" class="screen hidden">
+
     <header class="top-bar">
       <div>
-        <h2>Dashboard</h2>
+        <h2>Home</h2>
         <p id="welcomeText" class="muted"></p>
       </div>
       <button id="themeToggle" class="icon-btn">
@@ -92,47 +92,62 @@
       </button>
     </header>
 
-    <div class="card-grid">
-      <div class="card">
-        <h3>Next Rehearsal</h3>
-        <p id="nextRehearsal">Loading…</p>
-        <p id="nextRehearsalTime" class="muted small"></p>
+    <div class="home-grid">
+
+      <!-- ANNOUNCEMENT CARD -->
+      <div id="announcementCard" class="glass-card clickable">
+        <h3>🔔 Latest Announcement</h3>
+        <p id="announcementTitle" class="bold"></p>
+        <p id="announcementPreview" class="muted small"></p>
+        <button id="announcementReadMore" class="btn small hidden">Read more</button>
       </div>
 
-      <div class="card">
-        <h3>Countdown</h3>
-        <div class="ring-wrapper">
-          <div class="ring" id="countdownRing">
-            <div class="ring-inner">
-              <span id="countdownText">--</span>
+      <!-- SCHEDULE PREVIEW -->
+      <div id="schedulePreviewCard" class="glass-card clickable">
+        <h3>📅 Upcoming Rehearsals</h3>
+        <ul id="schedulePreviewList" class="preview-list"></ul>
+      </div>
+
+      <!-- TRACKS + VIDEOS -->
+      <div class="row-2">
+        <div id="tracksCard" class="glass-card clickable center">
+          <h3>🎵 Tracks</h3>
+        </div>
+        <div id="videosCard" class="glass-card clickable center">
+          <h3>🎥 Videos</h3>
+        </div>
+      </div>
+
+      <!-- PRACTICE + COUNTDOWN -->
+      <div class="row-2">
+        <div id="practiceCard" class="glass-card clickable center">
+          <div class="ring-wrapper">
+            <div class="ring ring-secondary" id="progressRing">
+              <div class="ring-inner">
+                <span id="progressText">0/60</span>
+              </div>
             </div>
           </div>
+          <p class="muted small">Practice Today</p>
         </div>
-        <p class="muted small">Days until next rehearsal</p>
-      </div>
 
-      <div class="card">
-        <h3>Your Practice Today</h3>
-        <div class="ring-wrapper">
-          <div class="ring ring-secondary" id="progressRing">
-            <div class="ring-inner">
-              <span id="progressText">0/60 min</span>
+        <div id="countdownCard" class="glass-card clickable center">
+          <div class="ring-wrapper">
+            <div class="ring" id="countdownRing">
+              <div class="ring-inner">
+                <span id="countdownText">--</span>
+              </div>
             </div>
           </div>
+          <p class="muted small">Days Until Rehearsal</p>
         </div>
-        <p class="muted small">Minutes practiced today</p>
       </div>
 
-      <div class="card">
-        <h3>Weekly Streak</h3>
-        <p id="streakText">0 days</p>
-        <p class="muted small">Consecutive days you hit your goal</p>
+      <!-- PROFILE -->
+      <div id="profileCard" class="glass-card clickable">
+        <h3>👤 Your Profile</h3>
       </div>
 
-      <div class="card">
-        <h3>Latest Announcement</h3>
-        <p id="latestAnnouncement">Loading…</p>
-      </div>
     </div>
   </div>
 
@@ -173,6 +188,12 @@
       <h3>Practice Reminders</h3>
       <p class="muted small">Enable notifications to get “Time to practice!” reminders.</p>
       <button id="enableNotifications" class="btn outline">Enable Notifications</button>
+    </div>
+
+    <div class="card">
+      <h3>Weekly Streak</h3>
+      <p id="streakText">0 days</p>
+      <p class="muted small">Consecutive days you hit your goal</p>
     </div>
 
     <button id="logoutBtn" class="btn outline">Sign Out</button>
