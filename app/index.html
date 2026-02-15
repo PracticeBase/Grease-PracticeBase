@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="stylesheet" href="app.css" />
-  <link rel="manifest" href="/Grease-PracticeBase/manifest.json">
+  <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#000000">
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -118,8 +118,10 @@
         </div>
       </div>
 
-      <!-- PRACTICE + COUNTDOWN -->
+      <!-- PRACTICE + NEXT REHEARSAL -->
       <div class="row-2">
+
+        <!-- PRACTICE CARD -->
         <div id="practiceCard" class="glass-card clickable center">
           <div class="ring-wrapper">
             <div class="ring ring-secondary" id="progressRing">
@@ -131,16 +133,21 @@
           <p class="muted small">Practice Today</p>
         </div>
 
-        <div id="countdownCard" class="glass-card clickable center">
-          <div class="ring-wrapper">
+        <!-- NEXT REHEARSAL + COUNTDOWN -->
+        <div id="nextRehearsalCard" class="glass-card clickable center">
+          <div class="ring-wrapper large-ring">
             <div class="ring" id="countdownRing">
-              <div class="ring-inner">
-                <span id="countdownText">--</span>
+              <div class="ring-inner large-inner">
+                <span id="countdownText" class="large-count">--</span>
               </div>
             </div>
           </div>
-          <p class="muted small">Days Until Rehearsal</p>
+
+          <h3 class="nr-title">Next Rehearsal</h3>
+          <p id="nrName" class="bold"></p>
+          <p id="nrDate" class="muted small"></p>
         </div>
+
       </div>
 
       <!-- PROFILE -->
@@ -151,6 +158,14 @@
     </div>
   </div>
 
+  <!-- ANNOUNCEMENTS PAGE -->
+  <div id="announcementsScreen" class="screen hidden">
+    <header class="top-bar">
+      <h2>Announcements</h2>
+    </header>
+    <div id="announcementsList" class="list">Loading…</div>
+  </div>
+
   <!-- SCHEDULE -->
   <div id="scheduleScreen" class="screen hidden">
     <header class="top-bar">
@@ -159,7 +174,7 @@
     <div id="scheduleList" class="list">Loading…</div>
   </div>
 
-  <!-- MEDIA -->
+  <!-- MEDIA (MUSIC + VIDEOS) -->
   <div id="mediaScreen" class="screen hidden">
     <header class="top-bar">
       <h2>Media</h2>
@@ -167,10 +182,10 @@
     <div id="mediaList" class="list">Loading…</div>
   </div>
 
-  <!-- PROFILE / SETTINGS -->
+  <!-- SETTINGS / PROFILE -->
   <div id="profileScreen" class="screen hidden">
     <header class="top-bar">
-      <h2>Profile & Settings</h2>
+      <h2>Settings</h2>
     </header>
 
     <p id="profileEmail"></p>
@@ -205,17 +220,21 @@
       <i data-lucide="home"></i>
       <span>Home</span>
     </div>
-    <div class="nav-btn" data-target="scheduleScreen" data-index="1">
+    <div class="nav-btn" data-target="announcementsScreen" data-index="1">
+      <i data-lucide="bell"></i>
+      <span>Announcements</span>
+    </div>
+    <div class="nav-btn" data-target="scheduleScreen" data-index="2">
       <i data-lucide="calendar"></i>
       <span>Schedule</span>
     </div>
-    <div class="nav-btn" data-target="mediaScreen" data-index="2">
+    <div class="nav-btn" data-target="mediaScreen" data-index="3">
       <i data-lucide="music"></i>
       <span>Media</span>
     </div>
-    <div class="nav-btn" data-target="profileScreen" data-index="3">
-      <i data-lucide="user"></i>
-      <span>Profile</span>
+    <div class="nav-btn" data-target="profileScreen" data-index="4">
+      <i data-lucide="settings"></i>
+      <span>Settings</span>
     </div>
   </div>
 

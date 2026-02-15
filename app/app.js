@@ -13,7 +13,12 @@ import {
 
 /* DOM HELPERS */
 const $ = id => document.getElementById(id);
-const status = msg => { const el = $("status"); if (el) el.textContent = msg; };
+const status = msg => {
+  const el = $("status");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.style.opacity = msg ? "1" : "0";
+};
 
 /* SCREENS */
 const screens = {
@@ -21,6 +26,7 @@ const screens = {
   loginScreen: $("loginScreen"),
   setupScreen: $("setupScreen"),
   homeScreen: $("homeScreen"),
+  announcementsScreen: $("announcementsScreen"),
   scheduleScreen: $("scheduleScreen"),
   mediaScreen: $("mediaScreen"),
   profileScreen: $("profileScreen")
@@ -211,7 +217,7 @@ async function loadHome() {
   $("welcomeText").textContent = auth.currentUser.email || "";
   $("profileEmail").textContent = auth.currentUser.email || "";
 
-  /* ANNOUNCEMENT */
+  /* ANNOUNCEMENT PREVIEW */
   try {
     const annQ = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(1));
     const annSnap = await getDocs(annQ);
@@ -230,7 +236,9 @@ async function loadHome() {
       if (full.length > 120) {
         $("announcementReadMore").classList.remove("hidden");
         $("announcementReadMore").onclick = () => {
-          alert(full); // placeholder until full announcements page exists
+          show("announcementsScreen");
+          setActiveNav(1);
+          loadAnnouncements();
         };
       } else {
         $("announcementReadMore").classList.add("hidden");
@@ -242,21 +250,27 @@ async function loadHome() {
     $("announcementReadMore").classList.add("hidden");
   }
 
-  /* NEXT REHEARSAL + COUNTDOWN */
+  /* NEXT REHEARSAL + COUNTDOWN (COMBINED CARD) */
   try {
     const schQ = query(collection(db, "schedule"), orderBy("sortTimestamp", "asc"), limit(1));
     const schSnap = await getDocs(schQ);
+
+    const nameEl = $("nrName");
+    const dateEl = $("nrDate");
+
     if (schSnap.empty) {
-      $("nextRehearsal") && ( $("nextRehearsal").textContent = "No rehearsals scheduled.");
-      $("nextRehearsalTime") && ( $("nextRehearsalTime").textContent = "" );
+      nameEl.textContent = "No rehearsals scheduled.";
+      dateEl.textContent = "";
       updateCountdown(null);
     } else {
       const s = schSnap.docs[0].data();
-      $("nextRehearsal") && ( $("nextRehearsal").textContent = s.title || "Rehearsal");
-      $("nextRehearsalTime") && ( $("nextRehearsalTime").textContent = `${s.date || ""} ${s.time || ""}`);
+      nameEl.textContent = s.title || "Rehearsal";
+      dateEl.textContent = `${s.date || ""} ${s.time || ""}`;
       updateCountdown(s.date || s.datetime || s.isoDate || null);
     }
   } catch {
+    $("nrName").textContent = "No rehearsals scheduled.";
+    $("nrDate").textContent = "";
     updateCountdown(null);
   }
 
@@ -294,37 +308,30 @@ function updateCountdown(dateStr) {
   const ring = $("countdownRing");
   const text = $("countdownText");
 
+  if (!ring || !text) return;
+
   if (!dateStr) {
-    if (ring) ring.style.background = "conic-gradient(var(--accent) 0deg, rgba(0,0,0,0.08) 0deg)";
-    if (text) text.textContent = "--";
+    ring.style.background = "conic-gradient(var(--accent) 0deg, rgba(0,0,0,0.08) 0deg)";
+    text.textContent = "--";
     return;
   }
 
-  let target;
-  try {
-    target = new Date(dateStr);
-    if (isNaN(target.getTime())) {
-      target = new Date(dateStr.replace(/-/g, "/"));
-    }
-  } catch {
-    target = new Date(dateStr.replace(/-/g, "/"));
-  }
-
-  if (!target || isNaN(target.getTime())) {
-    if (text) text.textContent = "--";
+  let target = new Date(dateStr.replace(/-/g, "/"));
+  if (isNaN(target.getTime())) {
+    text.textContent = "--";
     return;
   }
 
   const now = new Date();
-  const diff = target.getTime() - now.getTime();
+  const diff = target - now;
   const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 
   const maxDays = 30;
   const pct = Math.min(1, days / maxDays);
-  const angle = 360 - pct * 360;
+  const angle = pct * 360;
 
-  if (ring) ring.style.background = `conic-gradient(var(--accent) 0deg, var(--accent) ${angle}deg, rgba(0,0,0,0.08) ${angle}deg)`;
-  if (text) text.textContent = String(days);
+  ring.style.background = `conic-gradient(var(--accent) 0deg, var(--accent) ${angle}deg, rgba(0,0,0,0.08) ${angle}deg)`;
+  text.textContent = days;
 }
 
 /* PRACTICE PROGRESS */
@@ -410,10 +417,41 @@ function updateStreakDisplay() {
       break;
     }
   }
-  $("streakText").textContent = `${streak} day${streak === 1 ? "" : "s"}`;
+  const el = $("streakText");
+  if (el) el.textContent = `${streak} day${streak === 1 ? "" : "s"}`;
 }
 
-/* SCHEDULE */
+/* ANNOUNCEMENTS PAGE */
+async function loadAnnouncements() {
+  const box = $("announcementsList");
+  if (!box) return;
+  box.textContent = "Loading…";
+
+  try {
+    const qAnn = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(50));
+    const snap = await getDocs(qAnn);
+    if (snap.empty) {
+      box.textContent = "No announcements yet.";
+      return;
+    }
+    box.innerHTML = "";
+    snap.forEach(doc => {
+      const a = doc.data();
+      const div = document.createElement("div");
+      div.className = "list-item";
+      div.innerHTML = `
+        <strong>${a.title || "Announcement"}</strong><br>
+        <span class="muted small">${a.createdAt || ""}</span><br><br>
+        <span>${a.message || ""}</span>
+      `;
+      box.appendChild(div);
+    });
+  } catch {
+    box.textContent = "Unable to load announcements.";
+  }
+}
+
+/* SCHEDULE PAGE */
 async function loadSchedule() {
   const box = $("scheduleList");
   if (!box) return;
@@ -443,7 +481,7 @@ async function loadSchedule() {
   }
 }
 
-/* MEDIA */
+/* MEDIA PAGE (MUSIC + VIDEOS) */
 async function loadMedia() {
   const box = $("mediaList");
   if (!box) return;
@@ -455,6 +493,7 @@ async function loadMedia() {
     const [tracksSnap, videosSnap] = await Promise.all([getDocs(tracksQ), getDocs(videosQ)]);
 
     box.innerHTML = "";
+
     if (!tracksSnap.empty) {
       const h = document.createElement("h3"); h.textContent = "Tracks"; box.appendChild(h);
       tracksSnap.forEach(d => {
@@ -507,9 +546,10 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
     const index = parseInt(btn.dataset.index, 10);
     setActiveNav(index);
 
+    if (target === "homeScreen") loadHome();
+    if (target === "announcementsScreen") loadAnnouncements();
     if (target === "scheduleScreen") loadSchedule();
     if (target === "mediaScreen") loadMedia();
-    if (target === "homeScreen") loadHome();
 
     show(target);
   });
@@ -533,35 +573,36 @@ document.addEventListener("touchend", e => { touchEndX = e.changedTouches[0].scr
 
 /* HOME CARD NAVIGATION */
 $("announcementCard")?.addEventListener("click", () => {
-  // placeholder: when you add an announcements page, route there
-  alert("Announcements page coming soon.");
+  setActiveNav(1);
+  loadAnnouncements();
+  show("announcementsScreen");
 });
 $("schedulePreviewCard")?.addEventListener("click", () => {
-  setActiveNav(1);
+  setActiveNav(2);
   loadSchedule();
   show("scheduleScreen");
 });
 $("tracksCard")?.addEventListener("click", () => {
-  setActiveNav(2);
+  setActiveNav(3);
   loadMedia();
   show("mediaScreen");
 });
 $("videosCard")?.addEventListener("click", () => {
-  setActiveNav(2);
+  setActiveNav(3);
   loadMedia();
   show("mediaScreen");
 });
 $("practiceCard")?.addEventListener("click", () => {
-  setActiveNav(3);
+  setActiveNav(4);
   show("profileScreen");
 });
-$("countdownCard")?.addEventListener("click", () => {
-  setActiveNav(1);
+$("nextRehearsalCard")?.addEventListener("click", () => {
+  setActiveNav(2);
   loadSchedule();
   show("scheduleScreen");
 });
 $("profileCard")?.addEventListener("click", () => {
-  setActiveNav(3);
+  setActiveNav(4);
   show("profileScreen");
 });
 
@@ -617,17 +658,21 @@ function maybeShowInstallModal() {
 
   if (!isMobile()) {
     modal.classList.remove("active");
+    modal.classList.add("hidden");
     return;
   }
   if (isStandalone()) {
     modal.classList.remove("active");
+    modal.classList.add("hidden");
     return;
   }
   if (!deferredPrompt) {
     modal.classList.remove("active");
+    modal.classList.add("hidden");
     return;
   }
 
+  modal.classList.remove("hidden");
   modal.classList.add("active");
 }
 
@@ -641,17 +686,29 @@ $("installModalBtn")?.addEventListener("click", async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
   await deferredPrompt.userChoice;
-  $("installModal")?.classList.remove("active");
+  const modal = $("installModal");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.classList.add("hidden");
+  }
   deferredPrompt = null;
 });
 
 $("installModalSkip")?.addEventListener("click", () => {
-  $("installModal")?.classList.remove("active");
+  const modal = $("installModal");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.classList.add("hidden");
+  }
 });
 
 window.addEventListener("appinstalled", () => {
   deferredPrompt = null;
-  $("installModal")?.classList.remove("active");
+  const modal = $("installModal");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.classList.add("hidden");
+  }
 });
 
 /* SIGN OUT */
@@ -682,7 +739,8 @@ onAuthStateChanged(auth, (user) => {
 
 /* SPLASH → INITIAL FLOW */
 setTimeout(() => {
-  $("splashScreen")?.style.display = "none";
+  const splash = $("splashScreen");
+  if (splash) splash.style.display = "none";
 
   if (shouldAutoBiometric()) {
     show("bioAutoScreen");
