@@ -14,7 +14,7 @@ import {
 import { toast, notifyDevice } from "/Grease-PracticeBase/app/notif.js";
 
 /* REALTIME ANNOUNCEMENT LISTENER */
-import { collection, query, orderBy, limit, onSnapshot } from "../firebase.js";
+import { query, orderBy, limit, onSnapshot } from "../firebase.js";
 
 let lastAnnouncementId = null;
 
