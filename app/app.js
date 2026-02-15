@@ -737,22 +737,26 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-/* SPLASH → INITIAL FLOW */
 setTimeout(() => {
   const splash = document.getElementById("splashScreen");
   if (splash) {
     splash.style.display = "none";
   }
 
+  // If biometrics available and mobile, show auto biometric screen
   if (shouldAutoBiometric()) {
     show("bioAutoScreen");
+
+    // Attempt auto biometric immediately (but allow user to tap)
     triggerAutoBiometric().catch(() => {
+      // fallback to login screen if it fails
       show("loginScreen");
     });
   } else {
     show("loginScreen");
   }
 }, 1400);
+
 
 
 /* INITIAL TIMERS IF ALREADY SIGNED IN */
