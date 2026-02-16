@@ -301,3 +301,11 @@ body.dark .status-bar {
   box-shadow: var(--shadow);
   text-align: center;
 }
+.icon-btn{
+  background:transparent;
+  border:none;
+  padding:var(--space-2);
+  border-radius:var(--pill);
+  cursor:pointer;
+  color:var(--text);
+}
