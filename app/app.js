@@ -102,12 +102,12 @@ function saveBiometric(id) {
   localStorage.setItem(DEVICE_KEY, id);
 }
 
-/* SCREEN SHOW/HIDE */
 function show(screenName) {
   currentScreen = screenName;
 
   Object.entries(screens).forEach(([name, el]) => {
     if (!el) return;
+
     if (name === screenName) {
       el.classList.remove("hidden");
       requestAnimationFrame(() => el.classList.add("active"));
@@ -116,6 +116,15 @@ function show(screenName) {
       setTimeout(() => el.classList.add("hidden"), 300);
     }
   });
+
+  // If the target screen doesn't exist or something failed,
+  // ALWAYS show login instead of going blank.
+  const target = screens[screenName];
+  if (!target) {
+    console.warn("Screen not found, falling back to login:", screenName);
+    screens["loginScreen"].classList.remove("hidden");
+    screens["loginScreen"].classList.add("active");
+  }
 
   const hideNavScreens = ["loginScreen", "setupScreen", "bioAutoScreen"];
   const bottomNav = $("bottomNav");
@@ -126,6 +135,7 @@ function show(screenName) {
 
   maybeShowInstallModal();
 }
+
 
 /* THEME */
 function applyTheme(theme) {
