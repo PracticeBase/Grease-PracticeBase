@@ -249,5 +249,110 @@
 
   <script type="module" src="app.js"></script>
   <script> lucide.createIcons(); </script>
+
+
+
+
+
+
+
+  
+
+  <!-- NEW STUFF POPUP -->
+<div id="newStuffPopup" style="
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+  z-index: 9999;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
+">
+  <div style="
+    background: #fff;
+    width: 100%;
+    max-width: 360px;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
+    text-align: center;
+  ">
+    <h2 style="
+      margin: 0 0 12px 0;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #111;
+    ">
+      Hey, welcome back!
+    </h2>
+
+    <p style="
+      margin: 0 0 16px 0;
+      color: #444;
+      font-size: 1rem;
+      line-height: 1.4;
+    ">
+      We’ve been busy behind the scenes — here’s what’s new and shiny in your app.
+    </p>
+
+    <ul style="
+      text-align: left;
+      padding-left: 20px;
+      margin: 0 0 20px 0;
+      color: #666;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    ">
+      <li>✨ Real‑time announcements with notifications</li>
+      <li>📱 Smoother, more stable PWA mode</li>
+      <li>🔐 Faster biometrics + cleaner login</li>
+      <li>🔔 Toast popups so you never miss a thing</li>
+      <p>Soon, PracticeBase will <b>require</b> users to have their own accounts, using their own email and password. You will be notified when this happens, and will recieve instructions on how to make an account.</p>
+    </ul>
+
+    <button id="newStuffBtn" style="
+      width: 100%;
+      padding: 12px;
+      border-radius: 999px;
+      background: #000;
+      color: #fff;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s ease;
+    "
+    onmousedown="this.style.transform='scale(0.97)'"
+    onmouseup="this.style.transform='scale(1)'">
+      Let’s go!
+    </button>
+  </div>
+</div>
+
+<script>
+  // Change this when you add new features
+  const NEW_STUFF_VERSION = "1.0.0";
+
+  function showNewStuffOnce() {
+    const seen = localStorage.getItem("seenNewStuffVersion");
+
+    if (seen !== NEW_STUFF_VERSION) {
+      document.getElementById("newStuffPopup").style.display = "flex";
+    }
+  }
+
+  document.getElementById("newStuffBtn").addEventListener("click", () => {
+    document.getElementById("newStuffPopup").style.display = "none";
+    localStorage.setItem("seenNewStuffVersion", NEW_STUFF_VERSION);
+  });
+
+  // Call automatically on page load
+  showNewStuffOnce();
+</script>
+
 </body>
 </html>
