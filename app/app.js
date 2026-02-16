@@ -50,6 +50,8 @@ function listenForAnnouncements() {
   });
 }
 
+// Safe default so PWA never boots blank
+document.getElementById("loginScreen").classList.remove("hidden");
 
 
 /* DOM HELPERS */
